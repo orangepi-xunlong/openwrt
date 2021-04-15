@@ -1,5 +1,3 @@
-#!/bin/sh
-
 RAM_ROOT=/tmp/root
 
 export BACKUP_FILE=sysupgrade.tgz	# file extracted by preinit
@@ -130,7 +128,11 @@ get_magic_gpt() {
 }
 
 get_magic_vfat() {
-	(get_image "$@" | dd bs=1 count=3 skip=54) 2>/dev/null
+	(get_image "$@" | dd bs=3 count=1 skip=18) 2>/dev/null
+}
+
+get_magic_fat32() {
+	(get_image "$@" | dd bs=1 count=5 skip=82) 2>/dev/null
 }
 
 part_magic_efi() {
@@ -140,7 +142,8 @@ part_magic_efi() {
 
 part_magic_fat() {
 	local magic=$(get_magic_vfat "$@")
-	[ "$magic" = "FAT" ]
+	local magic_fat32=$(get_magic_fat32 "$@")
+	[ "$magic" = "FAT" ] || [ "$magic_fat32" = "FAT32" ]
 }
 
 export_bootdevice() {
@@ -297,6 +300,7 @@ indicate_upgrade() {
 # $(2): (optional) pipe command to extract firmware, e.g. dd bs=n skip=m
 default_do_upgrade() {
 	sync
+	echo 3 > /proc/sys/vm/drop_caches
 	if [ -n "$UPGRADE_BACKUP" ]; then
 		get_image "$1" "$2" | mtd $MTD_ARGS $MTD_CONFIG_ARGS -j "$UPGRADE_BACKUP" write - "${PART_NAME:-image}"
 	else

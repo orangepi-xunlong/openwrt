@@ -23,7 +23,7 @@
 
 	mtd-concat {
 		compatible = "mtd-concat";
-		devices = <&concat0 &concat1>;
+		devices = <&fwconcat0 &fwconcat1>;
 
 		partitions {
 			compatible = "fixed-partitions";
@@ -96,10 +96,6 @@
 	clock-frequency = <40000000>;
 };
 
-&uart {
-	status = "okay";
-};
-
 &pinmux {
 	enable_gpio_16: pinmux_enable_gpio_16 {
 		pinctrl-single,bits = <0x10 0x0 0x000000ff>;
@@ -166,8 +162,8 @@
 				read-only;
 			};
 
-			concat0: partition@230000 {
-				label = "concat0";
+			fwconcat0: partition@230000 {
+				label = "fwconcat0";
 				reg = <0x230000 0xdd0000>;
 			};
 		};
@@ -183,8 +179,8 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 
-			concat1: partition@0 {
-				label = "concat1";
+			fwconcat1: partition@0 {
+				label = "fwconcat1";
 				reg = <0x0 0x1000000>;
 			};
 		};

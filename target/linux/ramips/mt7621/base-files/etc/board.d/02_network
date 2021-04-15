@@ -19,6 +19,7 @@ ramips_setup_interfaces()
 	mikrotik,routerboard-m33g|\
 	xiaomi,mi-router-3g|\
 	xiaomi,mi-router-3g-v2|\
+	xiaomi,mi-router-4|\
 	xiaomi,mi-router-4a-gigabit)
 		ucidef_set_interfaces_lan_wan "lan1 lan2" "wan"
 		;;
@@ -29,6 +30,7 @@ ramips_setup_interfaces()
 	tplink,re350-v1|\
 	tplink,re500-v1|\
 	tplink,re650-v1|\
+	ubnt,unifi-6-lite|\
 	ubnt,unifi-nanohd)
 		ucidef_set_interface_lan "lan"
 		;;
@@ -52,6 +54,9 @@ ramips_setup_interfaces()
 		;;
 	mikrotik,routerboard-760igs)
 		ucidef_set_interfaces_lan_wan "lan2 lan3 lan4 lan5" "wan sfp"
+		;;
+	tplink,eap235-wall-v1)
+		ucidef_set_interface_lan "lan0 lan1 lan2 lan3"
 		;;
 	ubnt,edgerouter-x)
 		ucidef_set_interfaces_lan_wan "eth1 eth2 eth3 eth4" "eth0"
@@ -96,6 +101,11 @@ ramips_setup_macs()
 		lan_mac=$(mtd_get_mac_ascii u-boot-env ethaddr)
 		wan_mac=$(mtd_get_mac_ascii u-boot-env wanaddr)
 		;;
+	elecom,wrc-2533ghbk-i)
+		lan_mac=$(mtd_get_mac_ascii u-boot-env ethaddr)
+		wan_mac=$(mtd_get_mac_ascii u-boot-env wanaddr)
+		label_mac=$wan_mac
+		;;
 	hiwifi,hc5962)
 		lan_mac=$(mtd_get_mac_ascii bdinfo "Vfac_mac ")
 		label_mac=$lan_mac
@@ -105,6 +115,14 @@ ramips_setup_macs()
 	iodata,wnpr2600g)
 		wan_mac=$(mtd_get_mac_ascii u-boot-env wanaddr)
 		label_mac=$wan_mac
+		;;
+	jcg,y2|\
+	wavlink,wl-wn531a6|\
+	winstars,ws-wn583a6|\
+	zbtlink,zbt-we1326|\
+	zbtlink,zbt-wg3526-16m|\
+	zbtlink,zbt-wg3526-32m)
+		label_mac=$(mtd_get_mac_binary factory 0x4)
 		;;
 	linksys,ea7300-v1|\
 	linksys,ea7300-v2|\
@@ -120,13 +138,6 @@ ramips_setup_macs()
 		label_mac=$(cat "/sys/firmware/mikrotik/hard_config/mac_base")
 		wan_mac=$label_mac
 		lan_mac=$(macaddr_add $label_mac 1)
-		;;
-	wavlink,wl-wn531a6|\
-	winstars,ws-wn583a6|\
-	zbtlink,zbt-we1326|\
-	zbtlink,zbt-wg3526-16m|\
-	zbtlink,zbt-wg3526-32m)
-		label_mac=$(mtd_get_mac_binary factory 0x4)
 		;;
 	esac
 

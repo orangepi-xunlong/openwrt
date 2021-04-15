@@ -1,9 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # Copyright (C) 2009-2018 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
+
 include $(TOPDIR)/rules.mk
 
 ARCH:=arm
@@ -25,7 +23,7 @@ include $(INCLUDE_DIR)/target.mk
 DEFAULT_PACKAGES += \
 	kmod-usb-fotg210 \
 	kmod-usb-ledtrig-usbport \
-	kmod-leds-gpio kmod-ledtrig-heartbeat \
+	kmod-leds-gpio \
 	kmod-gpio-button-hotplug
 
 $(eval $(call BuildTarget))

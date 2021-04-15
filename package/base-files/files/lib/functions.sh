@@ -1,4 +1,3 @@
-#!/bin/sh
 # Copyright (C) 2006-2014 OpenWrt.org
 # Copyright (C) 2006 Fokus Fraunhofer <carsten.tittel@fokus.fraunhofer.de>
 # Copyright (C) 2010 Vertical Communications
@@ -118,15 +117,22 @@ config_get() {
 	esac
 }
 
+# get_bool <value> [<default>]
+get_bool() {
+	local _tmp="$1"
+	case "$_tmp" in
+		1|on|true|yes|enabled) _tmp=1;;
+		0|off|false|no|disabled) _tmp=0;;
+		*) _tmp="$2";;
+	esac
+	echo -n "$_tmp"
+}
+
 # config_get_bool <variable> <section> <option> [<default>]
 config_get_bool() {
 	local _tmp
 	config_get _tmp "$2" "$3" "$4"
-	case "$_tmp" in
-		1|on|true|yes|enabled) _tmp=1;;
-		0|off|false|no|disabled) _tmp=0;;
-		*) _tmp="$4";;
-	esac
+	_tmp="$(get_bool "$_tmp" "$4")"
 	export ${NO_EXPORT:+-n} "$1=$_tmp"
 }
 

@@ -60,9 +60,7 @@ $(eval $(call KernelPackage,bonding))
 define KernelPackage/udptunnel4
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=IPv4 UDP tunneling support
-  KCONFIG:= \
-	CONFIG_NET_UDP_TUNNEL \
-	CONFIG_VXLAN=m
+  KCONFIG:=CONFIG_NET_UDP_TUNNEL
   HIDDEN:=1
   FILES:=$(LINUX_DIR)/net/ipv4/udp_tunnel.ko
   AUTOLOAD:=$(call AutoLoad,32,udp_tunnel)
@@ -75,9 +73,7 @@ define KernelPackage/udptunnel6
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=IPv6 UDP tunneling support
   DEPENDS:=@IPV6
-  KCONFIG:= \
-	CONFIG_NET_UDP_TUNNEL \
-	CONFIG_VXLAN=m
+  KCONFIG:=CONFIG_NET_UDP_TUNNEL
   HIDDEN:=1
   FILES:=$(LINUX_DIR)/net/ipv6/ip6_udp_tunnel.ko
   AUTOLOAD:=$(call AutoLoad,32,ip6_udp_tunnel)
@@ -920,17 +916,22 @@ define KernelPackage/sched/description
  Extra kernel schedulers modules for IP traffic
 endef
 
+SCHED_TEQL_HOTPLUG:=hotplug-sched-teql.sh
+
+define KernelPackage/sched/install
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
+	$(INSTALL_DATA) ./files/$(SCHED_TEQL_HOTPLUG) $(1)/etc/hotplug.d/iface/15-teql
+endef
+
 $(eval $(call KernelPackage,sched))
 
 
 define KernelPackage/tcp-bbr
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=BBR TCP congestion control
-  KCONFIG:= \
-	CONFIG_TCP_CONG_ADVANCED=y \
-	CONFIG_TCP_CONG_BBR
+  KCONFIG:=CONFIG_TCP_CONG_BBR
   FILES:=$(LINUX_DIR)/net/ipv4/tcp_bbr.ko
-  AUTOLOAD:=$(call AutoLoad,74,tcp_bbr)
+  AUTOLOAD:=$(call AutoProbe,tcp_bbr)
 endef
 
 define KernelPackage/tcp-bbr/description
@@ -947,6 +948,24 @@ define KernelPackage/tcp-bbr/install
 endef
 
 $(eval $(call KernelPackage,tcp-bbr))
+
+
+define KernelPackage/tcp-hybla
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=TCP-Hybla congestion control algorithm
+  KCONFIG:=CONFIG_TCP_CONG_HYBLA
+  FILES:=$(LINUX_DIR)/net/ipv4/tcp_hybla.ko
+  AUTOLOAD:=$(call AutoProbe,tcp_hybla)
+endef
+
+define KernelPackage/tcp-hybla/description
+  TCP-Hybla is a sender-side only change that eliminates penalization of
+  long-RTT, large-bandwidth connections, like when satellite legs are
+  involved, especially when sharing a common bottleneck with normal
+  terrestrial connections.
+endef
+
+$(eval $(call KernelPackage,tcp-hybla))
 
 
 define KernelPackage/ax25
@@ -1238,3 +1257,31 @@ define KernelPackage/netlink-diag/description
 endef
 
 $(eval $(call KernelPackage,netlink-diag))
+
+
+define KernelPackage/wireguard
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=WireGuard secure network tunnel
+  DEPENDS:= \
+	  +kmod-crypto-lib-blake2s \
+	  +kmod-crypto-lib-chacha20poly1305 \
+	  +kmod-crypto-lib-curve25519 \
+	  +kmod-udptunnel4 \
+	  +IPV6:kmod-udptunnel6
+  KCONFIG:= \
+	  CONFIG_WIREGUARD \
+	  CONFIG_WIREGUARD_DEBUG=n
+  FILES:=$(LINUX_DIR)/drivers/net/wireguard/wireguard.ko
+  AUTOLOAD:=$(call AutoProbe,wireguard)
+endef
+
+define KernelPackage/wireguard/description
+  WireGuard is a novel VPN that runs inside the Linux Kernel and utilizes
+  state-of-the-art cryptography. It aims to be faster, simpler, leaner, and
+  more useful than IPSec, while avoiding the massive headache. It intends to
+  be considerably more performant than OpenVPN.  WireGuard is designed as a
+  general purpose VPN for running on embedded interfaces and super computers
+  alike, fit for many different circumstances. It uses UDP.
+endef
+
+$(eval $(call KernelPackage,wireguard))

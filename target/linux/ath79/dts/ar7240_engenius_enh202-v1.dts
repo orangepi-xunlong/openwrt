@@ -4,6 +4,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/mtd/partitions/uimage.h>
 
 / {
 	compatible = "engenius,enh202-v1", "qca,ar7240";
@@ -72,7 +73,7 @@
 	virtual_flash {
 		compatible = "mtd-concat";
 
-		devices = <&firmware1 &firmware2>;
+		devices = <&fwconcat0 &fwconcat1>;
 
 		partitions {
 			compatible = "fixed-partitions";
@@ -80,16 +81,13 @@
 			#size-cells = <1>;
 
 			partition@0 {
-				compatible = "openwrt,okli";
+				compatible = "openwrt,uimage", "denx,uimage";
+				openwrt,ih-magic = <IH_MAGIC_OKLI>;
 				label = "firmware";
 				reg = <0x0 0x0>;
 			};
 		};
 	};
-};
-
-&uart {
-	status = "okay";
 };
 
 &spi {
@@ -128,18 +126,19 @@
 				read-only;
 			};
 
-			firmware2: partition@b0000 {
-				label = "firmware2";
+			fwconcat1: partition@b0000 {
+				label = "fwconcat1";
 				reg = <0xb0000 0xf0000>;
 			};
 
 			partition@1a0000 {
 				label = "fakeroot";
 				reg = <0x1a0000 0x10000>;
+				read-only;
 			};
 
-			firmware1: partition@1b0000 {
-				label = "firmware1";
+			fwconcat0: partition@1b0000 {
+				label = "fwconcat0";
 				reg = <0x1b0000 0x4c0000>;
 			};
 

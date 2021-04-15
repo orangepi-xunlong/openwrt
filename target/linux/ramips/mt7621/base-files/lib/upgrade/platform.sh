@@ -63,6 +63,7 @@ platform_do_upgrade() {
 	netis,wf2881|\
 	xiaomi,mi-router-3g|\
 	xiaomi,mi-router-3-pro|\
+	xiaomi,mi-router-4|\
 	xiaomi,mi-router-ac2100|\
 	xiaomi,redmi-router-ac2100)
 		nand_do_upgrade "$1"
@@ -70,7 +71,11 @@ platform_do_upgrade() {
 	iodata,wn-ax1167gr2|\
 	iodata,wn-ax2033gr|\
 	iodata,wn-dx1167r)
-		iodata_mstc_upgrade_prepare
+		iodata_mstc_upgrade_prepare "0xfe75"
+		nand_do_upgrade "$1"
+		;;
+	iodata,wn-dx1200gr)
+		iodata_mstc_upgrade_prepare "0x1fe75"
 		nand_do_upgrade "$1"
 		;;
 	ubnt,edgerouter-x|\

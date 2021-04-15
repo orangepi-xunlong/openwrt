@@ -20,6 +20,11 @@
 		bootargs = "console=ttyS0,115200";
 	};
 
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+
 	keys {
 		compatible = "gpio-keys-polled";
 		poll-interval = <20>;
@@ -90,7 +95,8 @@
 			partition@2a0000 {
 				label = "firmware";
 				reg = <0x2a0000 0xd60000>;
-				compatible = "allnet,uimage";
+				compatible = "openwrt,uimage", "denx,uimage";
+				openwrt,ih-magic = <0x00000006>;
 			};
 		};
 	};
