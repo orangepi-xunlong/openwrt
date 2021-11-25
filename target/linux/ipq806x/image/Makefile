@@ -26,10 +26,9 @@ endef
 define Device/Default
 	PROFILES := Default
 	KERNEL_DEPENDS = $$(wildcard $(DTS_DIR)/$$(DEVICE_DTS).dts)
-	KERNEL_INITRAMFS_PREFIX := $$(IMG_PREFIX)-$(1)-initramfs
-	KERNEL_PREFIX := $$(IMAGE_PREFIX)
 	KERNEL_LOADADDR = 0x42208000
 	DEVICE_DTS = $$(SOC)-$(lastword $(subst _, ,$(1)))
+	DEVICE_DTS_CONFIG := config@1
 	IMAGES := sysupgrade.bin
 	IMAGE/sysupgrade.bin = sysupgrade-tar | append-metadata
 	IMAGE/sysupgrade.bin/squashfs :=
@@ -90,6 +89,19 @@ define Device/ZyXELImage
 	IMAGE/factory.bin := append-rootfs | pad-rootfs | pad-to $$$$(BLOCKSIZE) | zyxel-ras-image separate-kernel
 	IMAGE/sysupgrade.bin/squashfs := append-rootfs | pad-to $$$$(BLOCKSIZE) | sysupgrade-tar rootfs=$$$$@ | append-metadata
 endef
+
+define Device/askey_rt4230w-rev6
+	$(call Device/LegacyImage)
+	DEVICE_VENDOR := Askey
+	DEVICE_MODEL := RT4230W
+	DEVICE_VARIANT := REV6
+	SOC := qcom-ipq8065
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DEVICE_PACKAGES := ath10k-firmware-qca9984-ct
+	KERNEL_IN_UBI := 1
+endef
+TARGET_DEVICES += askey_rt4230w-rev6
 
 define Device/asrock_g10
 	$(call Device/FitImage)
@@ -272,6 +284,20 @@ define Device/netgear_r7800
 endef
 TARGET_DEVICES += netgear_r7800
 
+define Device/netgear_xr500
+	$(call Device/DniImage)
+	DEVICE_VENDOR := NETGEAR
+	DEVICE_MODEL := Nighthawk XR500
+	SOC := qcom-ipq8065
+	KERNEL_SIZE := 4096k
+	NETGEAR_BOARD_ID := XR500
+	NETGEAR_HW_ID := 29764958+0+256+512+4x4+4x4+cascade
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DEVICE_PACKAGES := ath10k-firmware-qca9984-ct
+endef
+TARGET_DEVICES += netgear_xr500
+
 define Device/qcom_ipq8064-ap148
 	$(call Device/FitImage)
 	$(call Device/UbiFit)
@@ -389,7 +415,7 @@ define Device/ubnt_unifi-ac-hd
 	BLOCKSIZE := 64k
 	IMAGE_SIZE := 14784k
 	DEVICE_PACKAGES := ath10k-firmware-qca9984-ct
-	IMAGE/sysupgrade.bin := append-kernel | pad-to $$$$(BLOCKSIZE) | append-rootfs | pad-rootfs | append-metadata | check-size
+	IMAGE/sysupgrade.bin := append-kernel | pad-to $$$$(BLOCKSIZE) | append-rootfs | pad-rootfs | check-size | append-metadata
 endef
 TARGET_DEVICES += ubnt_unifi-ac-hd
 

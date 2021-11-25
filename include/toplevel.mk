@@ -4,7 +4,7 @@
 
 PREP_MK= OPENWRT_BUILD= QUIET=0
 
-export IS_TTY=$(shell tty -s && echo 1 || echo 0)
+export IS_TTY=$(if $(MAKE_TERMOUT),1,0)
 
 include $(TOPDIR)/include/verbose.mk
 
@@ -258,7 +258,7 @@ help:
 	cat README.md
 
 distclean:
-	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds package/openwrt-packages staging_dir tmp
+	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds staging_dir tmp
 	@$(_SINGLE)$(SUBMAKE) -C scripts/config clean
 
 ifeq ($(findstring v,$(DEBUG)),)

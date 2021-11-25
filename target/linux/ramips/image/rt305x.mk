@@ -433,6 +433,7 @@ endef
 TARGET_DEVICES += dlink_dir-615-d
 
 define Device/dlink_dir-615-h1
+  $(Device/uimage-lzma-loader)
   SOC := rt3352
   BLOCKSIZE := 4k
   IMAGES += factory.bin
@@ -472,7 +473,7 @@ define Device/dlink_dwr-512-b
   DEVICE_VENDOR := D-Link
   DEVICE_MODEL := DWR-512
   DEVICE_VARIANT := B
-  DEVICE_PACKAGES := jboot-tools kmod-usb2 kmod-spi-dev kmod-usb-serial \
+  DEVICE_PACKAGES := jboot-tools kmod-usb2 kmod-spi-dev \
 	kmod-usb-serial-option kmod-usb-net-cdc-ether comgt-ncm
   DLINK_ROM_ID := DLK6E2412001
   DLINK_FAMILY_MEMBER := 0x6E24
@@ -500,7 +501,7 @@ define Device/edimax_3g-6200n
   IMAGE_SIZE := 3648k
   IMAGE/sysupgrade.bin := append-kernel | append-rootfs | \
 	edimax-header -s CSYS -m 3G62 -f 0x50000 -S 0x01100000 | pad-rootfs | \
-	append-metadata | check-size
+	check-size | append-metadata
   DEVICE_VENDOR := Edimax
   DEVICE_MODEL := 3g-6200n
   SUPPORTED_DEVICES += 3g-6200n
@@ -513,7 +514,7 @@ define Device/edimax_3g-6200nl
   IMAGE_SIZE := 3648k
   IMAGE/sysupgrade.bin := append-kernel | append-rootfs | \
 	edimax-header -s CSYS -m 3G62 -f 0x50000 -S 0x01100000 | pad-rootfs | \
-	append-metadata | check-size
+	check-size | append-metadata
   DEVICE_VENDOR := Edimax
   DEVICE_MODEL := 3g-6200nl
   SUPPORTED_DEVICES += 3g-6200nl
@@ -1047,7 +1048,7 @@ define Device/trendnet_tew-638apb-v2
   BLOCKSIZE := 64k
   IMAGE_SIZE := 3776k
   IMAGE/sysupgrade.bin := $$(sysupgrade_bin) | umedia-header 0x026382 | \
-	append-metadata | check-size
+	check-size | append-metadata
   DEVICE_VENDOR := TRENDnet
   DEVICE_MODEL := TEW-638APB
   DEVICE_VARIANT := v2
@@ -1183,6 +1184,17 @@ define Device/zorlik_zl5900v2
 endef
 TARGET_DEVICES += zorlik_zl5900v2
 
+define Device/zte_mf283plus
+  $(Device/uimage-lzma-loader)
+  SOC := rt3352
+  IMAGE_SIZE := 15872k
+  DEVICE_VENDOR := ZTE
+  DEVICE_MODEL := MF283+
+  DEVICE_PACKAGES := kmod-usb-ohci kmod-usb2 kmod-usb-net-qmi-wwan uqmi \
+	kmod-usb-serial kmod-usb-serial-option
+endef
+TARGET_DEVICES += zte_mf283plus
+
 define Device/zyxel_keenetic
   SOC := rt3052
   BLOCKSIZE := 64k
@@ -1196,6 +1208,7 @@ endef
 TARGET_DEVICES += zyxel_keenetic
 
 define Device/zyxel_keenetic-lite-b
+  $(Device/uimage-lzma-loader)
   SOC := rt5350
   IMAGE_SIZE := 7872k
   DEVICE_VENDOR := ZyXEL

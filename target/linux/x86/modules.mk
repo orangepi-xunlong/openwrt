@@ -2,6 +2,39 @@
 #
 # Copyright (C) 2017 Cezary Jackiewicz <cezary@eko.one.pll>
 
+define KernelPackage/amazon-ena
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Elastic Network Adapter (for Amazon AWS T3)
+  DEPENDS:=@TARGET_x86_64
+  KCONFIG:=CONFIG_ENA_ETHERNET
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/amazon/ena/ena.ko
+  AUTOLOAD:=$(call AutoLoad,12,ena)
+endef
+
+define KernelPackage/amazon-ena/description
+  This driver supports Elastic Network Adapter (ENA)
+  used by Amazon AWS T3 instances.
+endef
+
+$(eval $(call KernelPackage,amazon-ena))
+
+
+define KernelPackage/amd-xgbe
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=AMD Ethernet on SoC support
+  DEPENDS:=@PCI_SUPPORT @TARGET_x86_64 +kmod-lib-crc32c +kmod-ptp +kmod-libphy +LINUX_5_10:kmod-mdio-devres
+  KCONFIG:=CONFIG_AMD_XGBE
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/amd/xgbe/amd-xgbe.ko
+  AUTOLOAD:=$(call AutoLoad,35,amd-xgbe)
+endef
+
+define KernelPackage/amd-xgbe/description
+ Kernel modules for AMD 10GbE Ethernet device on an AMD SoC.
+endef
+
+$(eval $(call KernelPackage,amd-xgbe))
+
+
 define KernelPackage/sound-cs5535audio
   TITLE:=CS5535/CS5536 Audio Controller
   DEPENDS:=@TARGET_x86_geode +kmod-ac97
@@ -49,3 +82,23 @@ define KernelPackage/pcengines-apuv2/description
 endef
 
 $(eval $(call KernelPackage,pcengines-apuv2))
+
+
+define KernelPackage/meraki-mx100
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Cisco Meraki MX100 Platform Driver
+  DEPENDS:=@TARGET_x86 @!LINUX_5_4 +kmod-tg3 +kmod-gpio-button-hotplug +kmod-leds-gpio \
+    +kmod-usb-ledtrig-usbport +kmod-itco-wdt
+  KCONFIG:=CONFIG_MERAKI_MX100
+  FILES:=$(LINUX_DIR)/drivers/platform/x86/meraki-mx100.ko
+  AUTOLOAD:=$(call AutoLoad,60,meraki-mx100,1)
+endef
+
+define KernelPackage/meraki-mx100/description
+  This driver provides support for the front button and LEDs on
+  the Cisco Meraki MX100 (Tinkerbell) 1U appliance. Note this also
+  selects the gpio-cdev nu801 userspace driver to support the Status
+  LED, as well as other required platform drivers.
+endef
+
+$(eval $(call KernelPackage,meraki-mx100))

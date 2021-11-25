@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pcre
-PKG_VERSION:=8.44
-PKG_RELEASE:=3
+PKG_VERSION:=8.45
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@SF/$(PKG_NAME)
-PKG_HASH:=19108658b23b3ec5058edc9f66ac545ea19f9537234be1ec62b714c84399366d
+PKG_HASH:=4dae6fdcd2bb0bb6c37b5f97c33c2be954da743985369cddac3546e3218bffb8
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
 PKG_LICENSE:=BSD-3-Clause
@@ -27,7 +27,6 @@ PKG_CONFIG_DEPENDS:=\
 	CONFIG_PACKAGE_libpcrecpp \
 	CONFIG_PCRE_JIT_ENABLED
 
-include $(INCLUDE_DIR)/uclibc++.mk
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
 
@@ -59,9 +58,8 @@ endef
 define Package/libpcrecpp
   $(call Package/libpcre/default)
   TITLE:=C++ wrapper for Perl Compatible Regular Expression library
-  DEPENDS:=+libpcre $(CXX_DEPENDS)
+  DEPENDS:=+libpcre +libstdcpp
 endef
-
 
 HOST_CONFIGURE_ARGS += \
 	--enable-utf8 \
@@ -79,7 +77,7 @@ CONFIGURE_ARGS += \
 	--enable-pcre32 \
 	$(if $(CONFIG_PCRE_JIT_ENABLED),--enable-jit,--disable-jit) \
 	--with-match-limit-recursion=16000 \
-	$(if $(CONFIG_PACKAGE_libpcrecpp),--enable,--disable)-cpp
+	--$(if $(CONFIG_PACKAGE_libpcrecpp),en,dis)able-cpp
 
 MAKE_FLAGS += \
 	CFLAGS="$(TARGET_CFLAGS)"

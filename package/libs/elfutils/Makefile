@@ -7,12 +7,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=elfutils
-PKG_VERSION:=0.180
+PKG_VERSION:=0.182
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://sourceware.org/$(PKG_NAME)/ftp/$(PKG_VERSION)
-PKG_HASH:=b827b6e35c59d188ba97d7cf148fa8dc6f5c68eb6c5981888dfdbb758c0b569d
+PKG_HASH:=ecc406914edf335f0b7fc084ebe6c460c4d6d5175bfdd6688c1c78d9146b8858
 
 PKG_MAINTAINER:=Luiz Angelo Daros de Luca <luizluca@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -21,12 +21,12 @@ PKG_CPE_ID:=cpe:/a:elfutils_project:elfutils
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
-PKG_USE_MIPS16:=0
+PKG_USE_MIPS16:=1
 PKG_BUILD_DEPENDS:=!USE_GLIBC:argp-standalone
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/host-build.mk
 
 define Package/elfutils/Default
   SECTION:=libs
@@ -61,10 +61,18 @@ else
 CONFIGURE_ARGS += --disable-nls
 endif
 
+HOST_CONFIGURE_ARGS += \
+	--disable-debuginfod \
+	--disable-libdebuginfod \
+	--without-lzma \
+	--without-zstd
+
 CONFIGURE_ARGS += \
 	--program-prefix=eu- \
 	--disable-debuginfod \
-	--without-lzma
+	--disable-libdebuginfod \
+	--without-lzma \
+	--without-zstd
 
 TARGET_CFLAGS += -D_GNU_SOURCE -Wno-unused-result -Wno-format-nonliteral
 
@@ -96,7 +104,7 @@ define Package/libelf/install
 endef
 
 # these lines need to be ordered by dependency because of ABI versioning
+$(eval $(call HostBuild))
 $(eval $(call BuildPackage,libelf))
 $(eval $(call BuildPackage,libdw))
 $(eval $(call BuildPackage,libasm))
-$(eval $(call HostBuild))

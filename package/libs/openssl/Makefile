@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openssl
 PKG_BASE:=1.1.1
-PKG_BUGFIX:=k
+PKG_BUGFIX:=l
 PKG_VERSION:=$(PKG_BASE)$(PKG_BUGFIX)
 PKG_RELEASE:=1
 PKG_USE_MIPS16:=0
@@ -26,7 +26,7 @@ PKG_SOURCE_URL:= \
 	ftp://ftp.pca.dfn.de/pub/tools/net/openssl/source/ \
 	ftp://ftp.pca.dfn.de/pub/tools/net/openssl/source/old/$(PKG_BASE)/
 
-PKG_HASH:=892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5
+PKG_HASH:=0b7a3e5e59c34827fe0c3a74b7ec8baef302b98fa80088d7f9153aa16fa76bd1
 
 PKG_LICENSE:=OpenSSL
 PKG_LICENSE_FILES:=LICENSE
@@ -52,7 +52,6 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_OPENSSL_WITH_DTLS \
 	CONFIG_OPENSSL_WITH_EC2M \
 	CONFIG_OPENSSL_WITH_ERROR_MESSAGES \
-	CONFIG_OPENSSL_WITH_GOST \
 	CONFIG_OPENSSL_WITH_IDEA \
 	CONFIG_OPENSSL_WITH_MDC2 \
 	CONFIG_OPENSSL_WITH_NPN \
@@ -289,10 +288,6 @@ else
   OPENSSL_OPTIONS += no-engine
 endif
 
-ifndef CONFIG_OPENSSL_WITH_GOST
-  OPENSSL_OPTIONS += no-gost
-endif
-
 ifndef CONFIG_OPENSSL_WITH_DTLS
   OPENSSL_OPTIONS += no-dtls
 endif
@@ -327,7 +322,7 @@ endif
 
 OPENSSL_TARGET:=linux-$(call qstrip,$(CONFIG_ARCH))-openwrt
 
-STAMP_CONFIGURED := $(STAMP_CONFIGURED)_$(shell echo $(OPENSSL_OPTIONS) | mkhash md5)
+STAMP_CONFIGURED := $(STAMP_CONFIGURED)_$(shell echo $(OPENSSL_OPTIONS) | $(MKHASH) md5)
 
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \

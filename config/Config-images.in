@@ -17,6 +17,7 @@ menu "Target Images"
 			default TARGET_INITRAMFS_COMPRESSION_LZMA if TARGET_lantiq
 			default TARGET_INITRAMFS_COMPRESSION_LZMA if TARGET_mpc85xx
 			default TARGET_INITRAMFS_COMPRESSION_LZMA if TARGET_ramips
+			default TARGET_INITRAMFS_COMPRESSION_XZ if USES_SEPARATE_INITRAMFS
 			default TARGET_INITRAMFS_COMPRESSION_NONE
 			depends on TARGET_ROOTFS_INITRAMFS
 			help
@@ -35,13 +36,19 @@ menu "Target Images"
 				bool "lzma"
 
 			config TARGET_INITRAMFS_COMPRESSION_LZO
+				depends on !TARGET_ROOTFS_INITRAMFS_SEPARATE
 				bool "lzo"
 
 			config TARGET_INITRAMFS_COMPRESSION_LZ4
+				depends on !TARGET_ROOTFS_INITRAMFS_SEPARATE
 				bool "lz4"
 
 			config TARGET_INITRAMFS_COMPRESSION_XZ
 				bool "xz"
+
+			config TARGET_INITRAMFS_COMPRESSION_ZSTD
+				depends on !LINUX_5_4 && !LINUX_4_19
+				bool "zstd"
 		endchoice
 
 		config EXTERNAL_CPIO
@@ -52,11 +59,20 @@ menu "Target Images"
 			  Kernel uses specified external cpio as INITRAMFS_SOURCE.
 
 		config TARGET_INITRAMFS_FORCE
-                        bool "Force"
-                        depends on TARGET_ROOTFS_INITRAMFS
-                        default n
-                        help
-                          Ignore the initramfs passed by the bootloader.
+			bool "Force"
+			depends on TARGET_ROOTFS_INITRAMFS
+			default n
+			help
+			  Ignore the initramfs passed by the bootloader.
+
+		config TARGET_ROOTFS_INITRAMFS_SEPARATE
+			bool "separate ramdisk"
+			depends on USES_SEPARATE_INITRAMFS && TARGET_ROOTFS_INITRAMFS && !TARGET_INITRAMFS_FORCE
+			default y if USES_SEPARATE_INITRAMFS
+			help
+			  Generate separate initrd.cpio instead of embedding it.
+			  This is useful for generating images with a dedicated
+			  ramdisk e.g. in U-Boot's uImage and uImage.FIT formats.
 
 	comment "Root filesystem archives"
 
@@ -184,6 +200,7 @@ menu "Target Images"
 		depends on TARGET_x86
 		depends on TARGET_ROOTFS_EXT4FS || TARGET_ROOTFS_JFFS2 || TARGET_ROOTFS_SQUASHFS
 		select PACKAGE_grub2
+		select PACKAGE_grub2-bios-setup
 		default y
 
 	config GRUB_EFI_IMAGES
@@ -192,6 +209,7 @@ menu "Target Images"
 		depends on TARGET_ROOTFS_EXT4FS || TARGET_ROOTFS_JFFS2 || TARGET_ROOTFS_SQUASHFS
 		select PACKAGE_grub2
 		select PACKAGE_grub2-efi
+		select PACKAGE_grub2-bios-setup
 		select PACKAGE_kmod-fs-vfat
 		default y
 
@@ -264,14 +282,14 @@ menu "Target Images"
 	source "target/linux/*/image/Config.in"
 
 	config TARGET_KERNEL_PARTSIZE
-		int "Kernel partition size (in MB)"
+		int "Kernel partition size (in MiB)"
 		depends on USES_BOOT_PART
 		default 8 if TARGET_apm821xx_sata
 		default 64 if TARGET_bcm27xx
 		default 16
 
 	config TARGET_ROOTFS_PARTSIZE
-		int "Root filesystem partition size (in MB)"
+		int "Root filesystem partition size (in MiB)"
 		depends on USES_ROOTFS_PART || TARGET_ROOTFS_EXT4FS || TARGET_omap || TARGET_sunxi || TARGET_uml
 		default 104
 		help
@@ -284,5 +302,13 @@ menu "Target Images"
 		  Override the root partition on the final device. If left empty,
 		  it will be mounted by PARTUUID which makes the kernel find the
 		  appropriate disk automatically.
+
+	config TARGET_ROOTFS_PERSIST_VAR
+		bool "Make /var persistent"
+		default n
+		help
+		  Do not symlink /var to /tmp, so that its content will persist
+		  across reboots. When enabled, /var/run will still be linked
+		  to /tmp/run.
 
 endmenu
