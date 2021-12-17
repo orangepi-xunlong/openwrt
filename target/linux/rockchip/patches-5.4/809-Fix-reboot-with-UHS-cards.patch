@@ -1,0 +1,25 @@
+From a20b0fb17eeeeeb097a73217d709ddda2059932e Mon Sep 17 00:00:00 2001
+From: baiywt <baiywt_gj@163.com>
+Date: Fri, 17 Dec 2021 10:22:33 +0800
+Subject: [PATCH] Fix reboot with UHS cards
+
+---
+ drivers/mmc/core/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 8f94c25..3337979 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1383,7 +1383,7 @@ void mmc_power_off(struct mmc_host *host)
+ 	 * XO-1.5, require a short delay after poweroff before the card
+ 	 * can be successfully turned on again.
+ 	 */
+-	mmc_delay(1);
++	mmc_delay(2);
+ }
+ 
+ void mmc_power_cycle(struct mmc_host *host, u32 ocr)
+-- 
+2.30.2
+
