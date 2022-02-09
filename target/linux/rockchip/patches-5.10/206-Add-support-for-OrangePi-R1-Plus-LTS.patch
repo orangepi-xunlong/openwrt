@@ -26,7 +26,7 @@ new file mode 100644
 index 000000000..c65f7c417
 --- /dev/null
 +++ b/arch/arm64/boot/dts/rockchip/rk3328-orangepi-r1-plus-lts.dts
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,70 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +#include "rk3328-orangepi-r1-plus.dts"
 +
@@ -86,6 +86,17 @@ index 000000000..c65f7c417
 +        };
 +};
 +
++&sys_led {
++       label = "orangepi-r1-plus-lts:red:sys";
++};
++
++&wan_led {
++       label = "orangepi-r1-plus-lts:green:wan";
++};
++
++&lan_led {
++       label = "orangepi-r1-plus-lts:green:lan";
++};
 -- 
 2.25.1
 
