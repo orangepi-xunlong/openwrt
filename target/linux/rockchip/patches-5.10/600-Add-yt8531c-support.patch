@@ -1,128 +1,19 @@
-From 310511a10acaf25a94ae7bb73ad45bacfc556ad6 Mon Sep 17 00:00:00 2001
+From 3b60e97e8cf8a1ae78ec68a2fed37cd763675e56 Mon Sep 17 00:00:00 2001
 From: baiywt <baiywt_gj@163.com>
-Date: Tue, 23 Nov 2021 17:01:48 +0800
+Date: Fri, 18 Feb 2022 16:38:43 +0800
 Subject: [PATCH] Add yt8531c support
 
 ---
- .../net/ethernet/stmicro/stmmac/stmmac_main.c |   82 +
- drivers/net/phy/Kconfig                       |    5 +
- drivers/net/phy/Makefile                      |    1 +
- drivers/net/phy/motorcomm.c                   | 1513 +++++++++++++++++
- drivers/net/phy/phy_device.c                  |   16 +
- drivers/net/phy/yt8614-phy.h                  |  491 ++++++
- include/linux/motorcomm_phy.h                 |  119 ++
- 7 files changed, 2227 insertions(+)
+ drivers/net/phy/Kconfig       |    5 +
+ drivers/net/phy/Makefile      |    1 +
+ drivers/net/phy/motorcomm.c   | 1540 +++++++++++++++++++++++++++++++++
+ drivers/net/phy/yt8614-phy.h  |  491 +++++++++++
+ include/linux/motorcomm_phy.h |  119 +++
+ 5 files changed, 2156 insertions(+)
  create mode 100644 drivers/net/phy/motorcomm.c
  create mode 100644 drivers/net/phy/yt8614-phy.h
  create mode 100644 include/linux/motorcomm_phy.h
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 834e7442c..b54f7d84c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -113,6 +113,10 @@ static void stmmac_exit_fs(struct net_device *dev);
- 
- #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
- 
-+#define RTL_8211E_PHY_ID  0x001cc915
-+#define RTL_8211F_PHY_ID  0x001cc916
-+#define YT_8531C_PHY_ID   0x4f51e91b
-+
- /**
-  * stmmac_verify_args - verify the driver parameters.
-  * Description: it checks the driver parameters and set a default in case of
-@@ -4864,6 +4868,74 @@ int stmmac_reinit_ringparam(struct net_device *dev, u32 rx_size, u32 tx_size)
- 	return ret;
- }
- 
-+static int phy_rtl8211e_led_fixup(struct phy_device *phydev)
-+{
-+        int val;
-+
-+        printk("%s in\n", __func__);
-+
-+        /*switch to extension page44*/
-+        phy_write(phydev, 31, 0x07);
-+        phy_write(phydev, 30, 0x2c);
-+
-+        /*set led1(yellow) act*/
-+        val = phy_read(phydev, 26);
-+        val &= (~(1<<4));// bit4=0
-+        val |= (1<<5);// bit5=1
-+        val &= (~(1<<6));// bit6=0
-+        phy_write(phydev, 26, val);
-+
-+        /*set led0(green) link*/
-+        val = phy_read(phydev, 28);
-+        val |= (7<<0);// bit0,1,2=1
-+        val &= (~(7<<4));// bit4,5,6=0
-+        val &= (~(7<<8));// bit8,9,10=0
-+        phy_write(phydev, 28, val);
-+
-+        /*switch back to page0*/
-+        phy_write(phydev,31,0x00);
-+
-+        return 0;
-+}
-+
-+static int phy_rtl8211f_led_fixup(struct phy_device *phydev)
-+{
-+        int val;
-+
-+        printk("%s in\n", __func__);
-+
-+        /*switch to extension page 0xd04*/
-+        phy_write(phydev, 31, 0xd04);
-+
-+
-+        /*set led1(yellow) act*/
-+        /*set led2(green) link*/
-+        val = 0xae00;
-+        phy_write(phydev, 16, val);
-+
-+        val = 0x0;
-+        phy_write(phydev, 17, val);
-+        /*switch back to page0*/
-+        phy_write(phydev,31,0x00);
-+
-+        return 0;
-+}
-+
-+static int phy_yt8531_led_fixup(struct phy_device *phydev)
-+{
-+        printk("%s in\n", __func__);
-+        phy_write(phydev, 0x1e, 0xa00d);
-+        phy_write(phydev, 0x1f, 0x670);
-+
-+        phy_write(phydev, 0x1e, 0xa00e);
-+        phy_write(phydev, 0x1f, 0x2070);
-+
-+        phy_write(phydev, 0x1e, 0xa00f);
-+        phy_write(phydev, 0x1f, 0x7e);
-+
-+        return 0;
-+}
-+
- /**
-  * stmmac_dvr_probe
-  * @device: device pointer
-@@ -5083,6 +5155,16 @@ int stmmac_dvr_probe(struct device *device,
- 		netdev_err(ndev, "failed to setup phy (%d)\n", ret);
- 		goto error_phy_setup;
- 	}
-+	/* register the PHY board fixup */
-+        ret = phy_register_fixup_for_uid(RTL_8211E_PHY_ID, 0xffffffff, phy_rtl8211e_led_fixup);
-+        if (ret)
-+                pr_warn("Cannot register PHY board fixup.\n");
-+        ret = phy_register_fixup_for_uid(RTL_8211F_PHY_ID, 0xffffffff, phy_rtl8211f_led_fixup);
-+        if (ret)
-+                pr_warn("Cannot register PHY board fixup.\n");
-+        ret = phy_register_fixup_for_uid(YT_8531C_PHY_ID, 0xffffffff, phy_yt8531_led_fixup);
-+        if (ret)
-+                pr_warn("Cannot register PHY board fixup.\n");
- 
- 	ret = register_netdev(ndev);
- 	if (ret) {
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
 index ce030fcb1..ff4861847 100644
 --- a/drivers/net/phy/Kconfig
@@ -140,23 +31,23 @@ index ce030fcb1..ff4861847 100644
  	tristate "National Semiconductor PHYs"
  	help
 diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index 7c227bd26..64e8c2a82 100644
+index 7c227bd26..83b447f11 100644
 --- a/drivers/net/phy/Makefile
 +++ b/drivers/net/phy/Makefile
 @@ -82,6 +82,7 @@ obj-$(CONFIG_MICREL_PHY)	+= micrel.o
  obj-$(CONFIG_MICROCHIP_PHY)	+= microchip.o
  obj-$(CONFIG_MICROCHIP_T1_PHY)	+= microchip_t1.o
  obj-$(CONFIG_MICROSEMI_PHY)	+= mscc/
-+obj-$(CONFIG_MOTORCOMM_PHY)	+= motorcomm.o
++obj-$(CONFIG_MOTORCOMM_PHY)     += motorcomm.o
  obj-$(CONFIG_NATIONAL_PHY)	+= national.o
  obj-$(CONFIG_NXP_TJA11XX_PHY)	+= nxp-tja11xx.o
  obj-$(CONFIG_QSEMI_PHY)		+= qsemi.o
 diff --git a/drivers/net/phy/motorcomm.c b/drivers/net/phy/motorcomm.c
 new file mode 100644
-index 000000000..fe8aca76a
+index 000000000..74eef3dfa
 --- /dev/null
 +++ b/drivers/net/phy/motorcomm.c
-@@ -0,0 +1,1513 @@
+@@ -0,0 +1,1540 @@
 +/*
 + * drivers/net/phy/motorcomm.c
 + *
@@ -243,9 +134,26 @@ index 000000000..fe8aca76a
 +static unsigned int yt_mport_base_phy_addr = 0xff; //0xff: invalid; for 8618
 +static unsigned int yt_mport_base_phy_addr_8614 = 0xff; //0xff: invalid;
 +
++int phy_yt8531_led_fixup(struct mii_bus *bus, int addr);
++int yt8511_config_out_125m(struct mii_bus *bus, int phy_id);
++
 +#if ( LINUX_VERSION_CODE > KERNEL_VERSION(5,0,0) )
 +int genphy_config_init(struct phy_device *phydev)
 +{
++	int ret;
++
++	printk (KERN_INFO "yzhang..read phyaddr=%d, phyid=%08x\n",phydev->mdio.addr, phydev->phy_id);
++
++	if(phydev->phy_id == 0x4f51e91b)
++	{
++		printk (KERN_INFO "yzhang..get YT8511, abt to set 125m clk out, phyaddr=%d, phyid=%08x\n",phydev->mdio.addr, phydev->phy_id);
++		ret = yt8511_config_out_125m(phydev->mdio.bus, phydev->mdio.addr);
++		printk (KERN_INFO "yzhang..8511 set 125m clk out, reg=%#04x\n",phydev->mdio.bus->read(phydev->mdio.bus,phydev->mdio.addr,0x1f)/*double check as delay*/);
++		if (ret<0)
++			printk (KERN_INFO "yzhang..failed to set 125m clk out, ret=%d\n",ret);
++
++		phy_yt8531_led_fixup(phydev->mdio.bus, phydev->mdio.addr);
++	}
 +	return  genphy_read_abilities(phydev);
 +}
 +#endif
@@ -532,16 +440,28 @@ index 000000000..fe8aca76a
 +    return ret;
 +}
 +
++int phy_yt8531_led_fixup(struct mii_bus *bus, int addr)
++{
++	printk("%s in\n", __func__);
 +
-+int yt8511_config_out_125m(struct mii_bus *bus, int phy_id)
++	ytphy_mii_wr_ext(bus, addr, 0xa00d, 0x670);
++	ytphy_mii_wr_ext(bus, addr, 0xa00e, 0x2070);
++	ytphy_mii_wr_ext(bus, addr, 0xa00f, 0x7e);
++
++	return 0;
++}
++
++int yt8511_config_out_125m(struct mii_bus *bus, int addr)
 +{
 +	int ret;
 +	int val;
 +
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0xa012, 0xd0);
-+	mdelay(100);
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0xa012);
++	mdelay(50);
++	ret = ytphy_mii_wr_ext(bus, addr, 0xa012, 0xd0);
 +
++	mdelay(100);
++	val = ytphy_mii_rd_ext(bus, addr, 0xa012);
++	
 +	if(val != 0xd0)
 +	{
 +		printk("yt8511_config_out_125m error\n");
@@ -549,18 +469,18 @@ index 000000000..fe8aca76a
 +	}
 +
 +	/* disable auto sleep */
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0x27);
++	val = ytphy_mii_rd_ext(bus, addr, 0x27);
 +	if (val < 0)
 +	        return val;
 +
 +	val &= (~BIT(15));
 +
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0x27, val);
++	ret = ytphy_mii_wr_ext(bus, addr, 0x27, val);
 +	if (ret < 0)
 +	        return ret;
 +
 +	/* enable RXC clock when no wire plug */
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0xc);
++	val = ytphy_mii_rd_ext(bus, addr, 0xc);
 +	if (val < 0)
 +	        return val;
 +
@@ -571,10 +491,8 @@ index 000000000..fe8aca76a
 +	11----125M from pll(here set to this value)
 +	*/
 +	val |= (3 << 1);
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0xc, val);
++	ret = ytphy_mii_wr_ext(bus, addr, 0xc, val);
 +	printk("yt8511_config_out_125m, phy clk out, val=%#08x\n",val);
-+
-+	//ret = ytphy_mii_wr_ext(bus, phy_id, 0xa012, 0x70);
 +
 +#if 0
 +	/* for customer, please enable it based on demand.
@@ -1670,47 +1588,6 @@ index 000000000..fe8aca76a
 +MODULE_DEVICE_TABLE(mdio, motorcomm_tbl);
 +
 +
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 950277e4d..509a64a6d 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -120,6 +120,7 @@ static const int phy_10gbit_full_features_array[] = {
- 	ETHTOOL_LINK_MODE_10000baseT_Full_BIT,
- };
- 
-+
- static void features_init(void)
- {
- 	/* 10/100 half/full*/
-@@ -816,6 +817,8 @@ static int get_phy_c22_id(struct mii_bus *bus, int addr, u32 *phy_id)
- 	return 0;
- }
- 
-+int yt8511_config_out_125m(struct mii_bus *bus, int phy_id);
-+
- /**
-  * get_phy_device - reads the specified PHY device and returns its @phy_device
-  *		    struct
-@@ -853,6 +856,19 @@ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45)
- 	if (r)
- 		return ERR_PTR(r);
- 
-+	printk (KERN_INFO "yzhang..read phyaddr=%d, phyid=%08x\n",addr, phy_id);
-+
-+	if(phy_id == 0x4f51e91b)
-+	{
-+		printk (KERN_INFO "yzhang..get YT8511, abt to set 125m clk out, phyaddr=%d, phyid=%08x\n",addr, phy_id);
-+		r = yt8511_config_out_125m(bus, addr);
-+		printk (KERN_INFO "yzhang..8511 set 125m clk out, reg=%#04x\n",bus->read(bus,addr,0x1f)/*double check as delay*/);
-+		if (r<0)
-+		{
-+			printk (KERN_INFO "yzhang..failed to set 125m clk out, ret=%d\n",r);
-+		}
-+	}
-+
- 	return phy_device_create(bus, addr, phy_id, is_c45, &c45_ids);
- }
- EXPORT_SYMBOL(get_phy_device);
 diff --git a/drivers/net/phy/yt8614-phy.h b/drivers/net/phy/yt8614-phy.h
 new file mode 100644
 index 000000000..56a398338
