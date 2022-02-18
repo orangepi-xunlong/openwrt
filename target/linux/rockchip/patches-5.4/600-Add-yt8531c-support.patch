@@ -1,123 +1,19 @@
-From acf039521685d9a1d272e8e577c1328c6a5bcca8 Mon Sep 17 00:00:00 2001
+From aa60f97e9b9e8ef7e76b73753fe1ca68fd7b0c25 Mon Sep 17 00:00:00 2001
 From: baiywt <baiywt_gj@163.com>
-Date: Thu, 11 Nov 2021 19:53:31 +0800
-Subject: [PATCH 3/3] Add yt8531c support
+Date: Fri, 18 Feb 2022 14:44:58 +0800
+Subject: [PATCH] Add yt8531c support
 
 ---
- .../net/ethernet/stmicro/stmmac/stmmac_main.c |   77 +
- drivers/net/phy/Kconfig                       |    5 +
- drivers/net/phy/Makefile                      |    1 +
- drivers/net/phy/motorcomm.c                   | 1514 +++++++++++++++++
- drivers/net/phy/phy_device.c                  |   15 +
- drivers/net/phy/yt8614-phy.h                  |  491 ++++++
- include/linux/motorcomm_phy.h                 |  119 ++
- 7 files changed, 2222 insertions(+)
+ drivers/net/phy/Kconfig       |    5 +
+ drivers/net/phy/Makefile      |    1 +
+ drivers/net/phy/motorcomm.c   | 1540 +++++++++++++++++++++++++++++++++
+ drivers/net/phy/yt8614-phy.h  |  491 +++++++++++
+ include/linux/motorcomm_phy.h |  119 +++
+ 5 files changed, 2156 insertions(+)
  create mode 100644 drivers/net/phy/motorcomm.c
  create mode 100644 drivers/net/phy/yt8614-phy.h
  create mode 100644 include/linux/motorcomm_phy.h
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 3dd11fb50..0b3fa19c5 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -112,6 +112,10 @@ static void stmmac_exit_fs(struct net_device *dev);
- 
- #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
- 
-+#define RTL_8211E_PHY_ID 	0x001cc915
-+#define RTL_8211F_PHY_ID 	0x001cc916
-+#define RTL_YT8531_PHY_ID 	0x4f51e91b
-+
- /**
-  * stmmac_verify_args - verify the driver parameters.
-  * Description: it checks the driver parameters and set a default in case of
-@@ -4429,6 +4433,69 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
- 	return 0;
- }
- 
-+static int phy_rtl8211e_led_fixup(struct phy_device *phydev)
-+{
-+	//int val;
-+
-+	printk("%s in\n", __func__);
-+
-+	/*switch to extension page44*/
-+	phy_write(phydev, 31, 0x07);
-+	phy_write(phydev, 30, 0x2c);
-+
-+	/*set led1(yellow) act
-+	val = phy_read(phydev, 26);
-+	val &= (~(1<<4));// bit4=0
-+	val |= (1<<5);// bit5=1
-+	val &= (~(1<<6));// bit6=0*/
-+	phy_write(phydev, 26, 0x20);
-+
-+	/*set led0(green) link
-+	val = phy_read(phydev, 28);
-+	val |= (7<<0);// bit0,1,2=1
-+	val &= (~(7<<4));// bit4,5,6=0
-+	val &= (~(7<<8));// bit8,9,10=0*/
-+	phy_write(phydev, 28, 0x07);
-+
-+	/*switch back to page0*/
-+	phy_write(phydev,31,0x00);
-+
-+	return 0;
-+}
-+
-+static int phy_rtl8211f_led_fixup(struct phy_device *phydev)
-+{
-+	printk("%s in\n", __func__);
-+
-+	/*switch to extension page44*/
-+	phy_write(phydev, 31, 0xd04);
-+
-+	/*set led1(yellow) act */
-+	/*set led2(green) link*/
-+	phy_write(phydev, 16, 0xae00);
-+
-+	/*switch back to page0*/
-+	phy_write(phydev,31,0x00);
-+
-+	return 0;
-+}
-+
-+static int phy_yt8531_led_fixup(struct phy_device *phydev)
-+{
-+       printk("%s in\n", __func__);
-+       phy_write(phydev, 0x1e, 0xa00d);
-+       phy_write(phydev, 0x1f, 0x670);
-+
-+       phy_write(phydev, 0x1e, 0xa00e);
-+       phy_write(phydev, 0x1f, 0x2070);
-+
-+       phy_write(phydev, 0x1e, 0xa00f);
-+       phy_write(phydev, 0x1f, 0x7e);
-+
-+       return 0;
-+}
-+
-+
- /**
-  * stmmac_dvr_probe
-  * @device: device pointer
-@@ -4654,6 +4721,16 @@ int stmmac_dvr_probe(struct device *device,
- 		goto error_phy_setup;
- 	}
- 
-+	ret = phy_register_fixup_for_uid(RTL_8211E_PHY_ID, 0xffffffff, phy_rtl8211e_led_fixup);
-+	if (ret)
-+		pr_warn("Cannot register PHY board fixup.\n");
-+	ret = phy_register_fixup_for_uid(RTL_8211F_PHY_ID, 0xffffffff, phy_rtl8211f_led_fixup);
-+	if (ret)
-+		pr_warn("Cannot register PHY board fixup.\n");
-+	ret = phy_register_fixup_for_uid(RTL_YT8531_PHY_ID, 0xffffffff, phy_yt8531_led_fixup);
-+	if (ret)
-+		pr_warn("Cannot register PHY board fixup.\n");
-+
- 	ret = register_netdev(ndev);
- 	if (ret) {
- 		dev_err(priv->device, "%s: ERROR %i registering the device\n",
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
 index 3d8e32d6b..7f5e65817 100644
 --- a/drivers/net/phy/Kconfig
@@ -148,10 +44,10 @@ index fddf61584..4818ca425 100644
  obj-$(CONFIG_QSEMI_PHY)		+= qsemi.o
 diff --git a/drivers/net/phy/motorcomm.c b/drivers/net/phy/motorcomm.c
 new file mode 100644
-index 000000000..a9e698076
+index 000000000..74eef3dfa
 --- /dev/null
 +++ b/drivers/net/phy/motorcomm.c
-@@ -0,0 +1,1514 @@
+@@ -0,0 +1,1540 @@
 +/*
 + * drivers/net/phy/motorcomm.c
 + *
@@ -238,10 +134,26 @@ index 000000000..a9e698076
 +static unsigned int yt_mport_base_phy_addr = 0xff; //0xff: invalid; for 8618
 +static unsigned int yt_mport_base_phy_addr_8614 = 0xff; //0xff: invalid;
 +
++int phy_yt8531_led_fixup(struct mii_bus *bus, int addr);
++int yt8511_config_out_125m(struct mii_bus *bus, int phy_id);
++
 +#if ( LINUX_VERSION_CODE > KERNEL_VERSION(5,0,0) )
 +int genphy_config_init(struct phy_device *phydev)
 +{
-+	printk(KERN_ERR"csy: genphy_config_init\n");
++	int ret;
++
++	printk (KERN_INFO "yzhang..read phyaddr=%d, phyid=%08x\n",phydev->mdio.addr, phydev->phy_id);
++
++	if(phydev->phy_id == 0x4f51e91b)
++	{
++		printk (KERN_INFO "yzhang..get YT8511, abt to set 125m clk out, phyaddr=%d, phyid=%08x\n",phydev->mdio.addr, phydev->phy_id);
++		ret = yt8511_config_out_125m(phydev->mdio.bus, phydev->mdio.addr);
++		printk (KERN_INFO "yzhang..8511 set 125m clk out, reg=%#04x\n",phydev->mdio.bus->read(phydev->mdio.bus,phydev->mdio.addr,0x1f)/*double check as delay*/);
++		if (ret<0)
++			printk (KERN_INFO "yzhang..failed to set 125m clk out, ret=%d\n",ret);
++
++		phy_yt8531_led_fixup(phydev->mdio.bus, phydev->mdio.addr);
++	}
 +	return  genphy_read_abilities(phydev);
 +}
 +#endif
@@ -528,16 +440,28 @@ index 000000000..a9e698076
 +    return ret;
 +}
 +
++int phy_yt8531_led_fixup(struct mii_bus *bus, int addr)
++{
++	printk("%s in\n", __func__);
 +
-+int yt8511_config_out_125m(struct mii_bus *bus, int phy_id)
++	ytphy_mii_wr_ext(bus, addr, 0xa00d, 0x670);
++	ytphy_mii_wr_ext(bus, addr, 0xa00e, 0x2070);
++	ytphy_mii_wr_ext(bus, addr, 0xa00f, 0x7e);
++
++	return 0;
++}
++
++int yt8511_config_out_125m(struct mii_bus *bus, int addr)
 +{
 +	int ret;
 +	int val;
 +
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0xa012, 0xd0);
-+	mdelay(100);
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0xa012);
++	mdelay(50);
++	ret = ytphy_mii_wr_ext(bus, addr, 0xa012, 0xd0);
 +
++	mdelay(100);
++	val = ytphy_mii_rd_ext(bus, addr, 0xa012);
++	
 +	if(val != 0xd0)
 +	{
 +		printk("yt8511_config_out_125m error\n");
@@ -545,18 +469,18 @@ index 000000000..a9e698076
 +	}
 +
 +	/* disable auto sleep */
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0x27);
++	val = ytphy_mii_rd_ext(bus, addr, 0x27);
 +	if (val < 0)
 +	        return val;
 +
 +	val &= (~BIT(15));
 +
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0x27, val);
++	ret = ytphy_mii_wr_ext(bus, addr, 0x27, val);
 +	if (ret < 0)
 +	        return ret;
 +
 +	/* enable RXC clock when no wire plug */
-+	val = ytphy_mii_rd_ext(bus, phy_id, 0xc);
++	val = ytphy_mii_rd_ext(bus, addr, 0xc);
 +	if (val < 0)
 +	        return val;
 +
@@ -567,10 +491,8 @@ index 000000000..a9e698076
 +	11----125M from pll(here set to this value)
 +	*/
 +	val |= (3 << 1);
-+	ret = ytphy_mii_wr_ext(bus, phy_id, 0xc, val);
++	ret = ytphy_mii_wr_ext(bus, addr, 0xc, val);
 +	printk("yt8511_config_out_125m, phy clk out, val=%#08x\n",val);
-+
-+	//ret = ytphy_mii_wr_ext(bus, phy_id, 0xa012, 0x70);
 +
 +#if 0
 +	/* for customer, please enable it based on demand.
@@ -1666,39 +1588,6 @@ index 000000000..a9e698076
 +MODULE_DEVICE_TABLE(mdio, motorcomm_tbl);
 +
 +
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 688586928..7781e396e 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -808,6 +808,8 @@ static int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id,
- 	return 0;
- }
- 
-+int yt8511_config_out_125m(struct mii_bus *bus, int phy_id);
-+
- /**
-  * get_phy_device - reads the specified PHY device and returns its @phy_device
-  *		    struct
-@@ -835,6 +837,19 @@ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45)
- 	if ((phy_id & 0x1fffffff) == 0x1fffffff)
- 		return ERR_PTR(-ENODEV);
- 
-+       printk (KERN_INFO "yzhang..read phyaddr=%d, phyid=%08x\n",addr, phy_id);
-+
-+       if(phy_id == 0x4f51e91b)
-+       {
-+               printk (KERN_INFO "yzhang..get YT8511, abt to set 125m clk out, phyaddr=%d, phyid=%08x\n",addr, phy_id);
-+               r = yt8511_config_out_125m(bus, addr);
-+               printk (KERN_INFO "yzhang..8511 set 125m clk out, reg=%#04x\n",bus->read(bus,addr,0x1f)/*double check as delay*/);
-+               if (r<0)
-+               {
-+                       printk (KERN_INFO "yzhang..failed to set 125m clk out, ret=%d\n",r);
-+               }
-+       }
-+
- 	return phy_device_create(bus, addr, phy_id, is_c45, &c45_ids);
- }
- EXPORT_SYMBOL(get_phy_device);
 diff --git a/drivers/net/phy/yt8614-phy.h b/drivers/net/phy/yt8614-phy.h
 new file mode 100644
 index 000000000..56a398338
