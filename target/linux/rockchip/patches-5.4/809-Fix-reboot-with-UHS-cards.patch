@@ -16,7 +16,7 @@ index 8f94c25..3337979 100644
  	 * can be successfully turned on again.
  	 */
 -	mmc_delay(1);
-+	mmc_delay(2);
++	mmc_delay(10);
  }
  
  void mmc_power_cycle(struct mmc_host *host, u32 ocr)
