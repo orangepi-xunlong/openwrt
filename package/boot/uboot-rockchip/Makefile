@@ -59,6 +59,7 @@ define U-Boot/nanopi-r2s-rk3328
   OF_PLATDATA:=$(1)
 endef
 
+
 # RK3399 boards
 
 define U-Boot/rock-pi-4-rk3399
