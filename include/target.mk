@@ -62,6 +62,25 @@ DEFAULT_PACKAGES.router:=\
 	ppp \
 	ppp-mod-pppoe
 
+# For easy usage
+DEFAULT_PACKAGES.tweak:=\
+	bash \
+	block-mount \
+	fdisk \
+	f2fs-tools \
+	f2fsck \
+	resize2fs \
+	losetup \
+	mount-utils \
+	kmod-ipt-raw \
+	kmod-nf-nathelper \
+	kmod-nf-nathelper-extra \
+	luci \
+	luci-compat \
+	luci-lib-base \
+	luci-lib-fs \
+	luci-lib-ipkg
+
 ifneq ($(DUMP),)
   all: dumpinfo
 endif
@@ -92,6 +111,9 @@ else
     -include ./$(SUBTARGET)/target.mk
   endif
 endif
+
+# Add tweaked packages
+DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.tweak)
 
 # Add device specific packages (here below to allow device type set from subtarget)
 DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.$(DEVICE_TYPE))
