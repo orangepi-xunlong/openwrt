@@ -52,7 +52,7 @@ case ${roottype} in
 		${LOSETUP} ${LOOP} ${rootsource}
 		${FSCKEXT4} -y ${LOOP}
 		${RESIZE2FS} ${LOOP}
-		sync
+		sync && reboot
 		;;
 esac
 
