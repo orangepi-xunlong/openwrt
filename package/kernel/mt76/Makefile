@@ -8,9 +8,9 @@ PKG_LICENSE_FILES:=
 
 PKG_SOURCE_URL:=https://github.com/openwrt/mt76
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2021-11-23
-PKG_SOURCE_VERSION:=99225b985cbcab4707589f1fa313436f4bf1e368
-PKG_MIRROR_HASH:=6444c7d49d778c7621b03f0f201ce41f6dc9ac00dedb29c66478360b4fd60492
+PKG_SOURCE_DATE:=2022-04-23
+PKG_SOURCE_VERSION:=a666d5637bc3afd3e310be09fac048906560097b
+PKG_MIRROR_HASH:=1a7f7a36e5e376d1b18da98c7939f980855f1981be0c3ad7024360dee702c9f8
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_USE_NINJA:=0
@@ -221,22 +221,31 @@ endef
 define KernelPackage/mt7915e
   $(KernelPackage/mt76-default)
   TITLE:=MediaTek MT7915e wireless driver
-  DEPENDS+=@PCI_SUPPORT +kmod-mt7615-common +kmod-hwmon-core +kmod-thermal +@DRIVER_11AX_SUPPORT
+  DEPENDS+=@PCI_SUPPORT +kmod-mt7615-common +kmod-hwmon-core +kmod-thermal +@DRIVER_11AX_SUPPORT +@KERNEL_RELAY
   FILES:= $(PKG_BUILD_DIR)/mt7915/mt7915e.ko
   AUTOLOAD:=$(call AutoProbe,mt7915e)
 endef
 
 define KernelPackage/mt7921-common
+  $(KernelPackage/mt76-default)
   TITLE:=MediaTek MT7615 wireless driver common code
   HIDDEN:=1
-  DEPENDS+=@PCI_SUPPORT +kmod-mt76-core +kmod-mt76-connac
+  DEPENDS+=+kmod-mt76-connac +@DRIVER_11AX_SUPPORT
   FILES:= $(PKG_BUILD_DIR)/mt7921/mt7921-common.ko
+endef
+
+define KernelPackage/mt7921u
+  $(KernelPackage/mt76-default)
+  TITLE:=MediaTek MT7921U wireless driver
+  DEPENDS+=+kmod-mt76-usb +kmod-mt7921-common
+  FILES:= $(PKG_BUILD_DIR)/mt7921/mt7921u.ko
+  AUTOLOAD:=$(call AutoProbe,mt7921u)
 endef
 
 define KernelPackage/mt7921s
   $(KernelPackage/mt76-default)
-  TITLE:=MediaTek MT7921s wireless driver
-  DEPENDS+=@PCI_SUPPORT +kmod-mt76-connac +kmod-mt76-sdio +kmod-mt7921-common
+  TITLE:=MediaTek MT7921S wireless driver
+  DEPENDS+=+kmod-mt76-sdio +kmod-mt7921-common
   FILES:= $(PKG_BUILD_DIR)/mt7921/mt7921s.ko
   AUTOLOAD:=$(call AutoProbe,mt7921s)
 endef
@@ -244,7 +253,7 @@ endef
 define KernelPackage/mt7921e
   $(KernelPackage/mt76-default)
   TITLE:=MediaTek MT7921e wireless driver
-  DEPENDS+=@PCI_SUPPORT +kmod-mt76-connac +kmod-mt7921-common
+  DEPENDS+=@PCI_SUPPORT +kmod-mt7921-common
   FILES:= $(PKG_BUILD_DIR)/mt7921/mt7921e.ko
   AUTOLOAD:=$(call AutoProbe,mt7921e)
 endef
@@ -337,6 +346,9 @@ ifdef CONFIG_PACKAGE_kmod-mt7915e
 endif
 ifdef CONFIG_PACKAGE_kmod-mt7921-common
   PKG_MAKE_FLAGS += CONFIG_MT7921_COMMON=m
+endif
+ifdef CONFIG_PACKAGE_kmod-mt7921u
+  PKG_MAKE_FLAGS += CONFIG_MT7921U=m
 endif
 ifdef CONFIG_PACKAGE_kmod-mt7921s
   PKG_MAKE_FLAGS += CONFIG_MT7921S=m
@@ -474,6 +486,7 @@ $(eval $(call KernelPackage,mt7663u))
 $(eval $(call KernelPackage,mt7663s))
 $(eval $(call KernelPackage,mt7915e))
 $(eval $(call KernelPackage,mt7921-common))
+$(eval $(call KernelPackage,mt7921u))
 $(eval $(call KernelPackage,mt7921s))
 $(eval $(call KernelPackage,mt7921e))
 $(eval $(call KernelPackage,mt76))

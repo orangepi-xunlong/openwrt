@@ -76,6 +76,11 @@
 &nand {
 	status = "okay";
 
+	mediatek,bbt;
+	mediatek,bmt-remap-range =
+		<0x180000 0x580000>,
+		<0x2980000 0x2d80000>;
+
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
@@ -90,7 +95,6 @@
 		partition@80000 {
 			label = "u_env";
 			reg = <0x80000 0x40000>;
-			read-only;
 		};
 
 		factory: partition@c0000 {
