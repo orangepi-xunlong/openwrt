@@ -45,6 +45,14 @@ define Build/pine64-img
 	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-u-boot.itb of="$@" seek=16384 conv=notrunc
 endef
 
+define Build/pine64-spi-bin
+
+	# Copy the idbloader and the u-boot image to the image at sector 0x40 and 0x4000
+	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-idbloader.img of="$@" seek=64 conv=notrunc
+	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-u-boot.itb of="$@" seek=512 conv=notrunc
+	dd if="$(DTS_DIR)"/$(DEVICE_DTS).dtb of="$@" seek=2304 conv=notrunc
+endef
+
 define Build/pine64-bin
         # Typical Rockchip boot flow with Rockchip miniloader
         # Rockchp idbLoader which is combinded by Rockchip ddr init bin

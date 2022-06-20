@@ -1,0 +1,1072 @@
+From 2176b7de1e9f5538ecf2d5d2185ff3a043f8d72f Mon Sep 17 00:00:00 2001
+From: baiywt <baiywt_gj@163.com>
+Date: Sat, 18 Jun 2022 08:09:51 +0800
+Subject: [PATCH] Add spi boot support for rk3328
+
+---
+ .../rk3328-orangepi-r1-plus-lts-u-boot.dtsi   |   8 ++
+ arch/arm/dts/rk3328-orangepi-r1-plus-lts.dts  |  29 +++++
+ .../dts/rk3328-orangepi-r1-plus-u-boot.dtsi   |  48 ++++++-
+ arch/arm/dts/rk3328-orangepi-r1-plus.dts      |  45 +++++--
+ arch/arm/mach-rockchip/rk3328/Kconfig         |   6 +
+ arch/arm/mach-rockchip/rk3328/rk3328.c        |   4 +
+ board/pine64/rock64_rk3328/Kconfig            |  15 +++
+ board/pine64/rock64_rk3328/Makefile           |   7 +
+ board/pine64/rock64_rk3328/rock64-rk3328.c    | 122 ++++++++++++++++++
+ .../rockpro64_rk3399/rockpro64-rk3399.c       |  17 +++
+ .../orangepi-r1-plus-lts-rk3328-spi_defconfig | 118 +++++++++++++++++
+ configs/orangepi-r1-plus-lts-rk3328_defconfig |  20 +++
+ configs/orangepi-r1-plus-rk3328-spi_defconfig | 120 +++++++++++++++++
+ configs/orangepi-r1-plus-rk3328_defconfig     |  22 ++++
+ drivers/clk/rockchip/clk_rk3328.c             |  57 ++++----
+ drivers/mtd/spi/spi-nor-ids.c                 |   3 +
+ include/config_distro_bootcmd.h               |  15 ++-
+ include/configs/rock64_rk3328.h               |  17 +++
+ include/configs/rockchip-common.h             |  12 ++
+ 19 files changed, 641 insertions(+), 44 deletions(-)
+ create mode 100644 arch/arm/dts/rk3328-orangepi-r1-plus-lts-u-boot.dtsi
+ create mode 100644 board/pine64/rock64_rk3328/Kconfig
+ create mode 100644 board/pine64/rock64_rk3328/Makefile
+ create mode 100644 board/pine64/rock64_rk3328/rock64-rk3328.c
+ create mode 100644 configs/orangepi-r1-plus-lts-rk3328-spi_defconfig
+ create mode 100644 configs/orangepi-r1-plus-rk3328-spi_defconfig
+ create mode 100644 include/configs/rock64_rk3328.h
+
+diff --git a/arch/arm/dts/rk3328-orangepi-r1-plus-lts-u-boot.dtsi b/arch/arm/dts/rk3328-orangepi-r1-plus-lts-u-boot.dtsi
+new file mode 100644
+index 00000000..76411f37
+--- /dev/null
++++ b/arch/arm/dts/rk3328-orangepi-r1-plus-lts-u-boot.dtsi
+@@ -0,0 +1,8 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * (C) Copyright 2018-2019 Rockchip Electronics Co., Ltd
++ * (C) Copyright 2020 David Bauer
++ */
++
++#include "rk3328-orangepi-r1-plus-u-boot.dtsi"
++#include "rk3328-sdram-lpddr3-666.dtsi"
+diff --git a/arch/arm/dts/rk3328-orangepi-r1-plus-lts.dts b/arch/arm/dts/rk3328-orangepi-r1-plus-lts.dts
+index 79814259..df3cb565 100644
+--- a/arch/arm/dts/rk3328-orangepi-r1-plus-lts.dts
++++ b/arch/arm/dts/rk3328-orangepi-r1-plus-lts.dts
+@@ -5,3 +5,32 @@
+ 	model = "Xunlong Orange Pi R1 Plus LTS";
+ 	compatible = "xunlong,orangepi-r1-plus-lts", "rockchip,rk3328";
+ };
++
++&sdmmc {
++        bus-width = <4>;
++        cap-sd-highspeed;
++        disable-wp;
++        pinctrl-0 = <&sdmmc0_clk>, <&sdmmc0_cmd>, <&sdmmc0_dectn>, <&sdmmc0_bus4>;
++        pinctrl-names = "default";
++        sd-uhs-sdr12;
++        sd-uhs-sdr25;
++        sd-uhs-sdr50;
++        sd-uhs-sdr104;
++        vmmc-supply = <&vcc_sd>;
++        vqmmc-supply = <&vcc_io_sdio>;
++        status = "okay";
++};
++
++&sys_led {
++       label = "orangepi-r1-plus-lts:red:sys";
++};
++
++&wan_led {
++       label = "orangepi-r1-plus-lts:green:wan";
++};
++
++&lan_led {
++       label = "orangepi-r1-plus-lts:green:lan";
++
++};
++
+diff --git a/arch/arm/dts/rk3328-orangepi-r1-plus-u-boot.dtsi b/arch/arm/dts/rk3328-orangepi-r1-plus-u-boot.dtsi
+index d4559965..65677407 100644
+--- a/arch/arm/dts/rk3328-orangepi-r1-plus-u-boot.dtsi
++++ b/arch/arm/dts/rk3328-orangepi-r1-plus-u-boot.dtsi
+@@ -1 +1,47 @@
+-#include "rk3328-nanopi-r2s-u-boot.dtsi"
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * (C) Copyright 2018-2019 Rockchip Electronics Co., Ltd
++ * (C) Copyright 2020 David Bauer
++ */
++
++#include "rk3328-u-boot.dtsi"
++#include "rk3328-sdram-ddr4-666.dtsi"
++/ {
++	chosen {
++		u-boot,spl-boot-order = "same-as-spl", &sdmmc, &emmc;
++	};
++};
++
++&gpio0 {
++	u-boot,dm-spl;
++};
++
++&pinctrl {
++	u-boot,dm-spl;
++};
++
++&sdmmc0m1_gpio {
++	u-boot,dm-spl;
++};
++
++&pcfg_pull_up_4ma {
++	u-boot,dm-spl;
++};
++
++/* Need this and all the pinctrl/gpio stuff above to set pinmux */
++&vcc_sd {
++	u-boot,dm-spl;
++};
++
++&gmac2io {
++	snps,reset-gpio = <&gpio1 RK_PC2 GPIO_ACTIVE_LOW>;
++	snps,reset-active-low;
++	snps,reset-delays-us = <0 10000 50000>;
++};
++
++&spi0 {
++        spi_flash: spiflash@0 {
++                u-boot,dm-pre-reloc;
++        };
++};
++
+diff --git a/arch/arm/dts/rk3328-orangepi-r1-plus.dts b/arch/arm/dts/rk3328-orangepi-r1-plus.dts
+index 658ea61e..f41e243c 100644
+--- a/arch/arm/dts/rk3328-orangepi-r1-plus.dts
++++ b/arch/arm/dts/rk3328-orangepi-r1-plus.dts
+@@ -2,37 +2,56 @@
+ #include "rk3328-nanopi-r2s.dts"
+ 
+ / {
+-	model = "Xunlong Orange Pi R1 Plus";
+-	compatible = "xunlong,orangepi-r1-plus", "rockchip,rk3328";
+-};
++        model = "Xunlong Orange Pi R1 Plus";
++        compatible = "xunlong,orangepi-r1-plus", "rockchip,rk3328";
++
++	aliases {
++		spi0 = &spi0;
++	};
++
++	config {
++		u-boot,spl-payload-offset = <0x40000>; /* @ 256KB */
++	};
+ 
+-&lan_led {
+-	label = "orangepi-r1-plus:green:lan";
+ };
+ 
+ &spi0 {
+ 	status = "okay";
+ 
+-	flash@0 {
++	spiflash@0 {
++		u-boot,dm-pre-reloc;
++
+ 		compatible = "jedec,spi-nor";
+ 		reg = <0>;
+-		spi-max-frequency = <10000000>;
++
++		/* maximum speed for Rockchip SPI */
++		spi-max-frequency = <50000000>;
+ 	};
+ };
+ 
+ &sys_led {
+ 	gpios = <&gpio3 RK_PC5 GPIO_ACTIVE_HIGH>;
+ 	label = "orangepi-r1-plus:red:sys";
++	default-state = "off";
+ };
+ 
+-&sys_led_pin {
+-	rockchip,pins = <3 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+-};
+-
+-&uart1 {
+-	status = "okay";
++&lan_led {
++	label = "orangepi-r1-plus:green:lan";
++	default-state = "on";
+ };
+ 
+ &wan_led {
+ 	label = "orangepi-r1-plus:green:wan";
++	default-state = "on";
++};
++
++&sys_led_pin {
++	rockchip,pins = <3 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
++};
++
++&sdmmc {
++      /delete-property/ sd-uhs-sdr12;
++      /delete-property/ sd-uhs-sdr25;
++      /delete-property/ sd-uhs-sdr50;
++      /delete-property/ sd-uhs-sdr104;
+ };
+diff --git a/arch/arm/mach-rockchip/rk3328/Kconfig b/arch/arm/mach-rockchip/rk3328/Kconfig
+index d13a1690..051c86a8 100644
+--- a/arch/arm/mach-rockchip/rk3328/Kconfig
++++ b/arch/arm/mach-rockchip/rk3328/Kconfig
+@@ -10,6 +10,11 @@ config TARGET_EVB_RK3328
+ 	  with full function and phisical connectors support like
+ 	  usb2.0 host ports, LVDS, JTAG, MAC, SDcard, HDMI, USB-2-serial...
+ 
++config TARGET_ROCK64_RK3328
++	bool "Pine64 Rock64 board"
++	help
++	  Rock64 is SBC produced by Pine64
++
+ endchoice
+ 
+ config ROCKCHIP_BOOT_MODE_REG
+@@ -40,5 +45,6 @@ config TPL_STACK
+ 	default 0xff098000
+ 
+ source "board/rockchip/evb_rk3328/Kconfig"
++source "board/pine64/rock64_rk3328/Kconfig"
+ 
+ endif
+diff --git a/arch/arm/mach-rockchip/rk3328/rk3328.c b/arch/arm/mach-rockchip/rk3328/rk3328.c
+index 7c85b266..3b2987e3 100644
+--- a/arch/arm/mach-rockchip/rk3328/rk3328.c
++++ b/arch/arm/mach-rockchip/rk3328/rk3328.c
+@@ -22,6 +22,10 @@ DECLARE_GLOBAL_DATA_PTR;
+ const char * const boot_devices[BROM_LAST_BOOTSOURCE + 1] = {
+ 	[BROM_BOOTSOURCE_EMMC] = "/rksdmmc@ff520000",
+ 	[BROM_BOOTSOURCE_SD] = "/rksdmmc@ff500000",
++	[BROM_BOOTSOURCE_SPINOR] = "/spi@ff190000/spiflash@0",
++
++	// TODO(ayufan): ease debugging
++	[BROM_BOOTSOURCE_USB] = "/spi@ff190000/spiflash@0",
+ };
+ 
+ static struct mm_region rk3328_mem_map[] = {
+diff --git a/board/pine64/rock64_rk3328/Kconfig b/board/pine64/rock64_rk3328/Kconfig
+new file mode 100644
+index 00000000..5c4a843a
+--- /dev/null
++++ b/board/pine64/rock64_rk3328/Kconfig
+@@ -0,0 +1,15 @@
++if TARGET_ROCK64_RK3328
++
++config SYS_BOARD
++	default "rock64_rk3328"
++
++config SYS_VENDOR
++	default "pine64"
++
++config SYS_CONFIG_NAME
++	default "rock64_rk3328"
++
++config BOARD_SPECIFIC_OPTIONS # dummy
++	def_bool y
++
++endif
+diff --git a/board/pine64/rock64_rk3328/Makefile b/board/pine64/rock64_rk3328/Makefile
+new file mode 100644
+index 00000000..63dd46f6
+--- /dev/null
++++ b/board/pine64/rock64_rk3328/Makefile
+@@ -0,0 +1,7 @@
++#
++# (C) Copyright 2019 Vasily Khoruzhick
++#
++# SPDX-License-Identifier:     GPL-2.0+
++#
++
++obj-y	+= rock64-rk3328.o
+diff --git a/board/pine64/rock64_rk3328/rock64-rk3328.c b/board/pine64/rock64_rk3328/rock64-rk3328.c
+new file mode 100644
+index 00000000..d31025e0
+--- /dev/null
++++ b/board/pine64/rock64_rk3328/rock64-rk3328.c
+@@ -0,0 +1,121 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * (C) Copyright 2019 Vasily Khoruzhick <anarsoul@gmail.com>
++ */
++
++#include <common.h>
++#include <spl.h>
++#include <asm/io.h>
++#include <asm/gpio.h>
++#include <asm/arch-rockchip/gpio.h>
++#include <asm/arch-rockchip/grf_rk3328.h>
++#include <asm/arch-rockchip/hardware.h>
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/pinctrl/rockchip.h>
++
++#define GRF_BASE		0xFF100000
++#define GPIO0_BASE  0xFF210000
++#define GPIO2_BASE  0xFF230000
++#define GPIO3_BASE  0xFF240000
++
++DECLARE_GLOBAL_DATA_PTR;
++
++enum {
++	IOMUX_SEL_SDMMC_SHIFT	= 7,
++	IOMUX_SEL_SDMMC_MASK	= 1 << IOMUX_SEL_SDMMC_SHIFT,
++	IOMUX_SEL_SDMMC_M0	= 0,
++	IOMUX_SEL_SDMMC_M1,
++};
++
++enum {
++	/* GPIO0D_IOMUX*/
++	GPIO0D6_SEL_SHIFT	= 12,
++	GPIO0D6_SEL_MASK	= 3 << GPIO0D6_SEL_SHIFT,
++	GPIO0D6_GPIO		= 0,
++	GPIO0D6_SDMMC0_PWRENM1	= 3,
++
++	/* GPIO1A_IOMUX */
++	GPIO1A0_SEL_SHIFT	= 0,
++	GPIO1A0_SEL_MASK	= 0x3fff << GPIO1A0_SEL_SHIFT,
++	GPIO1A0_CARD_DATA_CLK_CMD_DETN	= 0x1555,
++
++	/* GPIO2BH_IOMUX*/
++	GPIO2BH7_SEL_SHIFT	= 0,
++	GPIO2BH7_SEL_MASK	= 7 << GPIO2BH7_SEL_SHIFT,
++	GPIO2BH7_GPIO		= 0,
++
++	/* GPIO2CL_IOMUX*/
++	GPIO2CL2_SEL_SHIFT	= 6,
++	GPIO2CL2_SEL_MASK	= 7 << GPIO2CL2_SEL_SHIFT,
++	GPIO2CL2_GPIO		= 0,
++
++	/* GPIO3C_IOMUX*/
++	GPIO3C5_SEL_SHIFT	= 10,
++	GPIO3C5_SEL_MASK	= 3 << GPIO3C5_SEL_SHIFT,
++	GPIO3C5_GPIO		= 0,
++};
++
++void spl_board_init(void)
++{
++	struct rk3328_grf_regs * const grf = (void *)GRF_BASE;
++	struct rockchip_gpio_regs * const gpio0 = (void *)GPIO0_BASE;
++	struct rockchip_gpio_regs * const gpio2 = (void *)GPIO2_BASE;
++	struct rockchip_gpio_regs * const gpio3 = (void *)GPIO3_BASE;
++	int mask, value;
++
++	printf("board_init_sdmmc_pwr_en\n");
++
++	rk_clrsetreg(&grf->com_iomux,
++		IOMUX_SEL_SDMMC_MASK,
++		IOMUX_SEL_SDMMC_M1 << IOMUX_SEL_SDMMC_SHIFT);
++
++	rk_clrsetreg(&grf->gpio0d_iomux,
++		GPIO0D6_SEL_MASK,
++		GPIO0D6_GPIO << GPIO0D6_SEL_SHIFT);
++
++	rk_clrsetreg(&grf->gpio2bh_iomux,
++		GPIO2BH7_SEL_MASK,
++		GPIO2BH7_GPIO << GPIO2BH7_SEL_SHIFT);
++
++	rk_clrsetreg(&grf->gpio2cl_iomux,
++		GPIO2CL2_SEL_MASK,
++		GPIO2CL2_GPIO << GPIO2CL2_SEL_SHIFT);
++
++	rk_clrsetreg(&grf->gpio3c_iomux,
++		GPIO3C5_SEL_MASK,
++		GPIO3C5_GPIO << GPIO3C5_SEL_SHIFT);
++
++	rk_clrsetreg(&grf->gpio1a_iomux,
++		GPIO1A0_SEL_MASK,
++		GPIO1A0_CARD_DATA_CLK_CMD_DETN
++		<< GPIO1A0_SEL_SHIFT);
++
++	// set GPIO0_D6 to GPIO_ACTIVE_LOW
++	// set GPIO0_D6 to OUTPUT
++	clrbits_le32(&gpio0->swport_dr, 1 << RK_PD6);
++	setbits_le32(&gpio0->swport_ddr, 1 << RK_PD6);
++
++	mask = (1UL << RK_PB7);
++	value = 1;
++	clrsetbits_le32(&gpio2->swport_dr, mask, value ? mask : 0);
++	setbits_le32(&gpio2->swport_ddr, mask);
++
++	mask = (1UL << RK_PC2);
++	value = 1;
++	clrsetbits_le32(&gpio2->swport_dr, mask, value ? mask : 0);
++	setbits_le32(&gpio2->swport_ddr, mask);
++
++	mask = (1UL << RK_PC5);
++	value = 0;
++	clrsetbits_le32(&gpio3->swport_dr, mask, value ? mask : 0);
++	setbits_le32(&gpio3->swport_ddr, mask);
++}
++
++int board_early_init_r(void)
++{
++	/* LED setup */
++	if (IS_ENABLED(CONFIG_LED))
++		led_default_state();
++
++	return 0;
++}
+diff --git a/board/pine64/rockpro64_rk3399/rockpro64-rk3399.c b/board/pine64/rockpro64_rk3399/rockpro64-rk3399.c
+index d7908461..b5198c72 100644
+--- a/board/pine64/rockpro64_rk3399/rockpro64-rk3399.c
++++ b/board/pine64/rockpro64_rk3399/rockpro64-rk3399.c
+@@ -9,13 +9,30 @@
+ #include <syscon.h>
+ #include <asm/io.h>
+ #include <asm/arch-rockchip/clock.h>
++#include <asm/arch-rockchip/gpio.h>
+ #include <asm/arch-rockchip/grf_rk3399.h>
+ #include <asm/arch-rockchip/hardware.h>
+ #include <asm/arch-rockchip/misc.h>
++#include <dt-bindings/pinctrl/rockchip.h>
+ 
+ #define GRF_IO_VSEL_BT565_SHIFT 0
+ #define PMUGRF_CON0_VSEL_SHIFT 8
+ 
++int board_early_init_f(void)
++{
++#define GPIO0_BASE  0xff720000
++
++	struct rockchip_gpio_regs * const gpio0 = (void *)GPIO0_BASE;
++
++	// set GPIO0_A2/B3 to GPIO_ACTIVE_HIGH
++	// set GPIO0_A2/B3 to OUTPUT
++	int mask = (1UL << RK_PA2) | (1UL << RK_PB3);
++	setbits_le32(&gpio0->swport_dr, mask);
++	setbits_le32(&gpio0->swport_ddr, mask);
++
++	return 0;
++}
++
+ #ifdef CONFIG_MISC_INIT_R
+ static void setup_iodomain(void)
+ {
+diff --git a/configs/orangepi-r1-plus-lts-rk3328-spi_defconfig b/configs/orangepi-r1-plus-lts-rk3328-spi_defconfig
+new file mode 100644
+index 00000000..1a5257ef
+--- /dev/null
++++ b/configs/orangepi-r1-plus-lts-rk3328-spi_defconfig
+@@ -0,0 +1,118 @@
++CONFIG_ARM=y
++CONFIG_ARCH_ROCKCHIP=y
++CONFIG_SYS_TEXT_BASE=0x00200000
++CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_DM_SPI=y
++CONFIG_ROCKCHIP_RK3328=y
++CONFIG_TPL_ROCKCHIP_COMMON_BOARD=y
++CONFIG_TPL_LIBCOMMON_SUPPORT=y
++CONFIG_TPL_LIBGENERIC_SUPPORT=y
++CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_TARGET_ROCK64_RK3328=y
++CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_STACK_R_ADDR=0x600000
++CONFIG_NR_DRAM_BANKS=1
++CONFIG_DEBUG_UART_BASE=0xFF130000
++CONFIG_DEBUG_UART_CLOCK=24000000
++CONFIG_SPL_SPI_FLASH_SUPPORT=y
++CONFIG_SPL_SPI_SUPPORT=y
++CONFIG_SYSINFO=y
++CONFIG_DEBUG_UART=y
++CONFIG_TPL_SYS_MALLOC_F_LEN=0x800
++# CONFIG_ANDROID_BOOT_IMAGE is not set
++CONFIG_FIT=y
++CONFIG_FIT_VERBOSE=y
++CONFIG_SPL_LOAD_FIT=y
++CONFIG_DEFAULT_FDT_FILE="rockchip/rk3328-orangepi-r1-plus-lts.dtb"
++CONFIG_MISC_INIT_R=y
++# CONFIG_DISPLAY_CPUINFO is not set
++CONFIG_DISPLAY_BOARDINFO_LATE=y
++CONFIG_SPL_BOARD_INIT=y
++# CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
++CONFIG_TPL_SYS_MALLOC_SIMPLE=y
++CONFIG_SPL_STACK_R=y
++CONFIG_SPL_I2C_SUPPORT=y
++CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x200
++CONFIG_SPL_SPI_LOAD=y
++CONFIG_SPL_ATF=y
++CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
++CONFIG_CMD_BOOTZ=y
++CONFIG_CMD_GPT=y
++CONFIG_CMD_MMC=y
++CONFIG_CMD_USB=y
++# CONFIG_CMD_SETEXPR is not set
++CONFIG_CMD_TIME=y
++CONFIG_SPL_OF_CONTROL=y
++CONFIG_TPL_OF_CONTROL=y
++CONFIG_DEFAULT_DEVICE_TREE="rk3328-orangepi-r1-plus-lts"
++CONFIG_OF_SPL_REMOVE_PROPS="clock-names interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
++CONFIG_TPL_OF_PLATDATA=y
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_SYS_MMC_ENV_DEV=1
++CONFIG_NET_RANDOM_ETHADDR=y
++CONFIG_TPL_DM=y
++CONFIG_REGMAP=y
++CONFIG_SPL_REGMAP=y
++CONFIG_TPL_REGMAP=y
++CONFIG_SYSCON=y
++CONFIG_SPL_SYSCON=y
++CONFIG_TPL_SYSCON=y
++CONFIG_CLK=y
++CONFIG_SPL_CLK=y
++CONFIG_FASTBOOT_BUF_ADDR=0x800800
++CONFIG_FASTBOOT_CMD_OEM_FORMAT=y
++CONFIG_ROCKCHIP_GPIO=y
++CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_LED=y
++CONFIG_LED_BLINK=y
++CONFIG_SPL_LED=y
++CONFIG_LED_GPIO=y
++CONFIG_MMC_DW=y
++CONFIG_MMC_DW_ROCKCHIP=y
++CONFIG_SF_DEFAULT_SPEED=20000000
++CONFIG_SPI_FLASH_GIGADEVICE=y
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_WINBOND=y
++CONFIG_DM_ETH=y
++CONFIG_ETH_DESIGNWARE=y
++CONFIG_GMAC_ROCKCHIP=y
++CONFIG_PINCTRL=y
++CONFIG_SPL_PINCTRL=y
++CONFIG_DM_PMIC=y
++CONFIG_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
++CONFIG_REGULATOR_PWM=y
++CONFIG_DM_REGULATOR_FIXED=y
++CONFIG_SPL_DM_REGULATOR_FIXED=y
++CONFIG_REGULATOR_RK8XX=y
++CONFIG_PWM_ROCKCHIP=y
++CONFIG_RAM=y
++CONFIG_SPL_RAM=y
++CONFIG_TPL_RAM=y
++CONFIG_DM_RESET=y
++CONFIG_BAUDRATE=1500000
++CONFIG_BOARD_EARLY_INIT_R=y
++CONFIG_DEBUG_UART_SHIFT=2
++CONFIG_ROCKCHIP_SPI=y
++CONFIG_SYSINFO=y
++CONFIG_SYSINFO_SMBIOS=y
++CONFIG_SYSRESET=y
++# CONFIG_TPL_SYSRESET is not set
++CONFIG_USB=y
++CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_DWC3=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_GENERIC=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_OHCI_GENERIC=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_DWC3=y
++# CONFIG_USB_DWC3_GADGET is not set
++CONFIG_USB_GADGET=y
++CONFIG_USB_GADGET_DWC2_OTG=y
++CONFIG_SPL_TINY_MEMSET=y
++CONFIG_TPL_TINY_MEMSET=y
++CONFIG_ERRNO_STR=y
+diff --git a/configs/orangepi-r1-plus-lts-rk3328_defconfig b/configs/orangepi-r1-plus-lts-rk3328_defconfig
+index 3cb3b5c3..1a5257ef 100644
+--- a/configs/orangepi-r1-plus-lts-rk3328_defconfig
++++ b/configs/orangepi-r1-plus-lts-rk3328_defconfig
+@@ -3,15 +3,20 @@ CONFIG_ARCH_ROCKCHIP=y
+ CONFIG_SYS_TEXT_BASE=0x00200000
+ CONFIG_SPL_GPIO_SUPPORT=y
+ CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_DM_SPI=y
+ CONFIG_ROCKCHIP_RK3328=y
+ CONFIG_TPL_ROCKCHIP_COMMON_BOARD=y
+ CONFIG_TPL_LIBCOMMON_SUPPORT=y
+ CONFIG_TPL_LIBGENERIC_SUPPORT=y
+ CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_TARGET_ROCK64_RK3328=y
++CONFIG_ENV_OFFSET=0x3F8000
+ CONFIG_SPL_STACK_R_ADDR=0x600000
+ CONFIG_NR_DRAM_BANKS=1
+ CONFIG_DEBUG_UART_BASE=0xFF130000
+ CONFIG_DEBUG_UART_CLOCK=24000000
++CONFIG_SPL_SPI_FLASH_SUPPORT=y
++CONFIG_SPL_SPI_SUPPORT=y
+ CONFIG_SYSINFO=y
+ CONFIG_DEBUG_UART=y
+ CONFIG_TPL_SYS_MALLOC_F_LEN=0x800
+@@ -23,11 +28,14 @@ CONFIG_DEFAULT_FDT_FILE="rockchip/rk3328-orangepi-r1-plus-lts.dtb"
+ CONFIG_MISC_INIT_R=y
+ # CONFIG_DISPLAY_CPUINFO is not set
+ CONFIG_DISPLAY_BOARDINFO_LATE=y
++CONFIG_SPL_BOARD_INIT=y
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
+ CONFIG_TPL_SYS_MALLOC_SIMPLE=y
+ CONFIG_SPL_STACK_R=y
+ CONFIG_SPL_I2C_SUPPORT=y
+ CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x200
++CONFIG_SPL_SPI_LOAD=y
+ CONFIG_SPL_ATF=y
+ CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
+ CONFIG_CMD_BOOTZ=y
+@@ -43,6 +51,7 @@ CONFIG_OF_SPL_REMOVE_PROPS="clock-names interrupt-parent assigned-clocks assigne
+ CONFIG_TPL_OF_PLATDATA=y
+ CONFIG_ENV_IS_IN_MMC=y
+ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_SYS_MMC_ENV_DEV=1
+ CONFIG_NET_RANDOM_ETHADDR=y
+ CONFIG_TPL_DM=y
+ CONFIG_REGMAP=y
+@@ -57,9 +66,16 @@ CONFIG_FASTBOOT_BUF_ADDR=0x800800
+ CONFIG_FASTBOOT_CMD_OEM_FORMAT=y
+ CONFIG_ROCKCHIP_GPIO=y
+ CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_LED=y
++CONFIG_LED_BLINK=y
++CONFIG_SPL_LED=y
++CONFIG_LED_GPIO=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_ROCKCHIP=y
+ CONFIG_SF_DEFAULT_SPEED=20000000
++CONFIG_SPI_FLASH_GIGADEVICE=y
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_WINBOND=y
+ CONFIG_DM_ETH=y
+ CONFIG_ETH_DESIGNWARE=y
+ CONFIG_GMAC_ROCKCHIP=y
+@@ -78,7 +94,11 @@ CONFIG_SPL_RAM=y
+ CONFIG_TPL_RAM=y
+ CONFIG_DM_RESET=y
+ CONFIG_BAUDRATE=1500000
++CONFIG_BOARD_EARLY_INIT_R=y
+ CONFIG_DEBUG_UART_SHIFT=2
++CONFIG_ROCKCHIP_SPI=y
++CONFIG_SYSINFO=y
++CONFIG_SYSINFO_SMBIOS=y
+ CONFIG_SYSRESET=y
+ # CONFIG_TPL_SYSRESET is not set
+ CONFIG_USB=y
+diff --git a/configs/orangepi-r1-plus-rk3328-spi_defconfig b/configs/orangepi-r1-plus-rk3328-spi_defconfig
+new file mode 100644
+index 00000000..14ff99f3
+--- /dev/null
++++ b/configs/orangepi-r1-plus-rk3328-spi_defconfig
+@@ -0,0 +1,120 @@
++CONFIG_ARM=y
++CONFIG_ARCH_ROCKCHIP=y
++CONFIG_SYS_TEXT_BASE=0x00200000
++CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_NR_DRAM_BANKS=1
++CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_DM_SPI=y
++CONFIG_ROCKCHIP_RK3328=y
++CONFIG_TPL_ROCKCHIP_COMMON_BOARD=y
++CONFIG_TPL_LIBCOMMON_SUPPORT=y
++CONFIG_TPL_LIBGENERIC_SUPPORT=y
++CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_TARGET_ROCK64_RK3328=y
++CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_STACK_R_ADDR=0x600000
++CONFIG_NR_DRAM_BANKS=1
++CONFIG_DEBUG_UART_BASE=0xFF130000
++CONFIG_DEBUG_UART_CLOCK=24000000
++CONFIG_SPL_SPI_FLASH_SUPPORT=y
++CONFIG_SPL_SPI_SUPPORT=y
++CONFIG_SYSINFO=y
++CONFIG_DEBUG_UART=y
++CONFIG_TPL_SYS_MALLOC_F_LEN=0x800
++# CONFIG_ANDROID_BOOT_IMAGE is not set
++CONFIG_FIT=y
++CONFIG_FIT_VERBOSE=y
++CONFIG_SPL_LOAD_FIT=y
++CONFIG_DEFAULT_FDT_FILE="rockchip/rk3328-orangepi-r1-plus.dtb"
++CONFIG_MISC_INIT_R=y
++# CONFIG_DISPLAY_CPUINFO is not set
++CONFIG_DISPLAY_BOARDINFO_LATE=y
++CONFIG_MISC_INIT_R=y
++CONFIG_SPL_BOARD_INIT=y
++# CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
++CONFIG_TPL_SYS_MALLOC_SIMPLE=y
++CONFIG_SPL_STACK_R=y
++CONFIG_SPL_I2C_SUPPORT=y
++CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x200
++CONFIG_SPL_SPI_LOAD=y
++CONFIG_SPL_ATF=y
++CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
++CONFIG_CMD_BOOTZ=y
++CONFIG_CMD_GPT=y
++CONFIG_CMD_MMC=y
++CONFIG_CMD_USB=y
++# CONFIG_CMD_SETEXPR is not set
++CONFIG_CMD_TIME=y
++CONFIG_SPL_OF_CONTROL=y
++CONFIG_TPL_OF_CONTROL=y
++CONFIG_DEFAULT_DEVICE_TREE="rk3328-orangepi-r1-plus"
++CONFIG_OF_SPL_REMOVE_PROPS="clock-names interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
++CONFIG_TPL_OF_PLATDATA=y
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_SYS_MMC_ENV_DEV=1
++CONFIG_NET_RANDOM_ETHADDR=y
++CONFIG_TPL_DM=y
++CONFIG_REGMAP=y
++CONFIG_SPL_REGMAP=y
++CONFIG_TPL_REGMAP=y
++CONFIG_SYSCON=y
++CONFIG_SPL_SYSCON=y
++CONFIG_TPL_SYSCON=y
++CONFIG_CLK=y
++CONFIG_SPL_CLK=y
++CONFIG_FASTBOOT_BUF_ADDR=0x800800
++CONFIG_FASTBOOT_CMD_OEM_FORMAT=y
++CONFIG_ROCKCHIP_GPIO=y
++CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_LED=y
++CONFIG_LED_BLINK=y
++CONFIG_SPL_LED=y
++CONFIG_LED_GPIO=y
++CONFIG_MMC_DW=y
++CONFIG_MMC_DW_ROCKCHIP=y
++CONFIG_SF_DEFAULT_SPEED=20000000
++CONFIG_SPI_FLASH_GIGADEVICE=y
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_WINBOND=y
++CONFIG_DM_ETH=y
++CONFIG_ETH_DESIGNWARE=y
++CONFIG_GMAC_ROCKCHIP=y
++CONFIG_PINCTRL=y
++CONFIG_SPL_PINCTRL=y
++CONFIG_DM_PMIC=y
++CONFIG_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
++CONFIG_REGULATOR_PWM=y
++CONFIG_DM_REGULATOR_FIXED=y
++CONFIG_SPL_DM_REGULATOR_FIXED=y
++CONFIG_REGULATOR_RK8XX=y
++CONFIG_PWM_ROCKCHIP=y
++CONFIG_RAM=y
++CONFIG_SPL_RAM=y
++CONFIG_TPL_RAM=y
++CONFIG_DM_RESET=y
++CONFIG_BAUDRATE=1500000
++CONFIG_BOARD_EARLY_INIT_R=y
++CONFIG_DEBUG_UART_SHIFT=2
++CONFIG_ROCKCHIP_SPI=y
++CONFIG_SYSINFO=y
++CONFIG_SYSINFO_SMBIOS=y
++CONFIG_SYSRESET=y
++# CONFIG_TPL_SYSRESET is not set
++CONFIG_USB=y
++CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_DWC3=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_GENERIC=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_OHCI_GENERIC=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_DWC3=y
++# CONFIG_USB_DWC3_GADGET is not set
++CONFIG_USB_GADGET=y
++CONFIG_USB_GADGET_DWC2_OTG=y
++CONFIG_SPL_TINY_MEMSET=y
++CONFIG_TPL_TINY_MEMSET=y
++CONFIG_ERRNO_STR=y
+diff --git a/configs/orangepi-r1-plus-rk3328_defconfig b/configs/orangepi-r1-plus-rk3328_defconfig
+index 8494484b..14ff99f3 100644
+--- a/configs/orangepi-r1-plus-rk3328_defconfig
++++ b/configs/orangepi-r1-plus-rk3328_defconfig
+@@ -2,16 +2,22 @@ CONFIG_ARM=y
+ CONFIG_ARCH_ROCKCHIP=y
+ CONFIG_SYS_TEXT_BASE=0x00200000
+ CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_NR_DRAM_BANKS=1
+ CONFIG_ENV_OFFSET=0x3F8000
++CONFIG_SPL_DM_SPI=y
+ CONFIG_ROCKCHIP_RK3328=y
+ CONFIG_TPL_ROCKCHIP_COMMON_BOARD=y
+ CONFIG_TPL_LIBCOMMON_SUPPORT=y
+ CONFIG_TPL_LIBGENERIC_SUPPORT=y
+ CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_TARGET_ROCK64_RK3328=y
++CONFIG_ENV_OFFSET=0x3F8000
+ CONFIG_SPL_STACK_R_ADDR=0x600000
+ CONFIG_NR_DRAM_BANKS=1
+ CONFIG_DEBUG_UART_BASE=0xFF130000
+ CONFIG_DEBUG_UART_CLOCK=24000000
++CONFIG_SPL_SPI_FLASH_SUPPORT=y
++CONFIG_SPL_SPI_SUPPORT=y
+ CONFIG_SYSINFO=y
+ CONFIG_DEBUG_UART=y
+ CONFIG_TPL_SYS_MALLOC_F_LEN=0x800
+@@ -23,11 +29,15 @@ CONFIG_DEFAULT_FDT_FILE="rockchip/rk3328-orangepi-r1-plus.dtb"
+ CONFIG_MISC_INIT_R=y
+ # CONFIG_DISPLAY_CPUINFO is not set
+ CONFIG_DISPLAY_BOARDINFO_LATE=y
++CONFIG_MISC_INIT_R=y
++CONFIG_SPL_BOARD_INIT=y
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
+ CONFIG_TPL_SYS_MALLOC_SIMPLE=y
+ CONFIG_SPL_STACK_R=y
+ CONFIG_SPL_I2C_SUPPORT=y
+ CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x200
++CONFIG_SPL_SPI_LOAD=y
+ CONFIG_SPL_ATF=y
+ CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
+ CONFIG_CMD_BOOTZ=y
+@@ -43,6 +53,7 @@ CONFIG_OF_SPL_REMOVE_PROPS="clock-names interrupt-parent assigned-clocks assigne
+ CONFIG_TPL_OF_PLATDATA=y
+ CONFIG_ENV_IS_IN_MMC=y
+ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_SYS_MMC_ENV_DEV=1
+ CONFIG_NET_RANDOM_ETHADDR=y
+ CONFIG_TPL_DM=y
+ CONFIG_REGMAP=y
+@@ -57,9 +68,16 @@ CONFIG_FASTBOOT_BUF_ADDR=0x800800
+ CONFIG_FASTBOOT_CMD_OEM_FORMAT=y
+ CONFIG_ROCKCHIP_GPIO=y
+ CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_LED=y
++CONFIG_LED_BLINK=y
++CONFIG_SPL_LED=y
++CONFIG_LED_GPIO=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_ROCKCHIP=y
+ CONFIG_SF_DEFAULT_SPEED=20000000
++CONFIG_SPI_FLASH_GIGADEVICE=y
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_WINBOND=y
+ CONFIG_DM_ETH=y
+ CONFIG_ETH_DESIGNWARE=y
+ CONFIG_GMAC_ROCKCHIP=y
+@@ -78,7 +96,11 @@ CONFIG_SPL_RAM=y
+ CONFIG_TPL_RAM=y
+ CONFIG_DM_RESET=y
+ CONFIG_BAUDRATE=1500000
++CONFIG_BOARD_EARLY_INIT_R=y
+ CONFIG_DEBUG_UART_SHIFT=2
++CONFIG_ROCKCHIP_SPI=y
++CONFIG_SYSINFO=y
++CONFIG_SYSINFO_SMBIOS=y
+ CONFIG_SYSRESET=y
+ # CONFIG_TPL_SYSRESET is not set
+ CONFIG_USB=y
+diff --git a/drivers/clk/rockchip/clk_rk3328.c b/drivers/clk/rockchip/clk_rk3328.c
+index bf4f1069..ff0ffcd0 100644
+--- a/drivers/clk/rockchip/clk_rk3328.c
++++ b/drivers/clk/rockchip/clk_rk3328.c
+@@ -530,54 +530,53 @@ static ulong rk3328_pwm_set_clk(struct rk3328_cru *cru, uint hz)
+ 	return DIV_TO_RATE(GPLL_HZ, div);
+ }
+ 
+-static ulong rk3328_saradc_get_clk(struct rk3328_cru *cru)
++static ulong rk3328_spi_get_clk(struct rk3328_cru *cru)
+ {
+-	u32 div, val;
++	u32 div, con;
+ 
+-	val = readl(&cru->clksel_con[23]);
+-	div = bitfield_extract(val, CLK_SARADC_DIV_CON_SHIFT,
+-			       CLK_SARADC_DIV_CON_WIDTH);
++	con = readl(&cru->clksel_con[24]);
++	div = (con & CLK_SPI_DIV_CON_MASK) >> CLK_SPI_DIV_CON_SHIFT;
+ 
+-	return DIV_TO_RATE(OSC_HZ, div);
++	return DIV_TO_RATE(GPLL_HZ, div);
+ }
+ 
+-static ulong rk3328_saradc_set_clk(struct rk3328_cru *cru, uint hz)
++static ulong rk3328_spi_set_clk(struct rk3328_cru *cru,
++				 ulong clk_id, ulong hz)
+ {
+-	int src_clk_div;
++	u32 div = GPLL_HZ / hz;
+ 
+-	src_clk_div = DIV_ROUND_UP(OSC_HZ, hz) - 1;
+-	assert(src_clk_div < 128);
++	rk_clrsetreg(&cru->clksel_con[24],
++		     CLK_PWM_PLL_SEL_MASK | CLK_PWM_DIV_CON_MASK,
++		     CLK_PWM_PLL_SEL_GPLL << CLK_PWM_PLL_SEL_SHIFT |
++			 (div - 1) << CLK_PWM_DIV_CON_SHIFT);
+ 
+-	rk_clrsetreg(&cru->clksel_con[23],
+-		     CLK_SARADC_DIV_CON_MASK,
+-		     src_clk_div << CLK_SARADC_DIV_CON_SHIFT);
+ 
+-	return rk3328_saradc_get_clk(cru);
++	return DIV_TO_RATE(GPLL_HZ, div);
+ }
+ 
+-static ulong rk3328_spi_get_clk(struct rk3328_cru *cru)
++static ulong rk3328_saradc_get_clk(struct rk3328_cru *cru)
+ {
+ 	u32 div, val;
+ 
+-	val = readl(&cru->clksel_con[24]);
+-	div = (val & CLK_SPI_DIV_CON_MASK) >> CLK_SPI_DIV_CON_SHIFT;
++	val = readl(&cru->clksel_con[23]);
++	div = bitfield_extract(val, CLK_SARADC_DIV_CON_SHIFT,
++			       CLK_SARADC_DIV_CON_WIDTH);
+ 
+ 	return DIV_TO_RATE(OSC_HZ, div);
+ }
+ 
+-static ulong rk3328_spi_set_clk(struct rk3328_cru *cru, uint hz)
++static ulong rk3328_saradc_set_clk(struct rk3328_cru *cru, uint hz)
+ {
+-	u32 src_clk_div;
++	int src_clk_div;
+ 
+-	src_clk_div = GPLL_HZ / hz;
++	src_clk_div = DIV_ROUND_UP(OSC_HZ, hz) - 1;
+ 	assert(src_clk_div < 128);
+ 
+-	rk_clrsetreg(&cru->clksel_con[24],
+-		     CLK_PWM_PLL_SEL_MASK | CLK_PWM_DIV_CON_MASK,
+-		     CLK_PWM_PLL_SEL_GPLL << CLK_PWM_PLL_SEL_SHIFT |
+-		     (src_clk_div - 1) << CLK_PWM_DIV_CON_SHIFT);
++	rk_clrsetreg(&cru->clksel_con[23],
++		     CLK_SARADC_DIV_CON_MASK,
++		     src_clk_div << CLK_SARADC_DIV_CON_SHIFT);
+ 
+-	return rk3328_spi_get_clk(cru);
++	return rk3328_saradc_get_clk(cru);
+ }
+ 
+ static ulong rk3328_clk_get_rate(struct clk *clk)
+@@ -610,6 +609,7 @@ static ulong rk3328_clk_get_rate(struct clk *clk)
+ 		rate = rk3328_spi_get_clk(priv->cru);
+ 		break;
+ 	default:
++		debug("%s: unsupported clk %ld\n", __func__, clk->id);
+ 		return -ENOENT;
+ 	}
+ 
+@@ -636,6 +636,9 @@ static ulong rk3328_clk_set_rate(struct clk *clk, ulong rate)
+ 	case SCLK_I2C3:
+ 		ret = rk3328_i2c_set_clk(priv->cru, clk->id, rate);
+ 		break;
++	case SCLK_SPI:
++		ret = rk3328_spi_set_clk(priv->cru, clk->id, rate);
++		break;
+ 	case SCLK_MAC2IO:
+ 		ret = rk3328_gmac2io_set_clk(priv->cru, rate);
+ 		break;
+@@ -645,9 +648,6 @@ static ulong rk3328_clk_set_rate(struct clk *clk, ulong rate)
+ 	case SCLK_SARADC:
+ 		ret = rk3328_saradc_set_clk(priv->cru, rate);
+ 		break;
+-	case SCLK_SPI:
+-		ret = rk3328_spi_set_clk(priv->cru, rate);
+-		break;
+ 	case DCLK_LCDC:
+ 	case SCLK_PDM:
+ 	case SCLK_RTC32K:
+@@ -682,6 +682,7 @@ static ulong rk3328_clk_set_rate(struct clk *clk, ulong rate)
+ 	case SCLK_USB3OTG_SUSPEND:
+ 		return 0;
+ 	default:
++		debug("%s: unsupported clk %ld\n", __func__, clk->id);
+ 		return -ENOENT;
+ 	}
+ 
+diff --git a/drivers/mtd/spi/spi-nor-ids.c b/drivers/mtd/spi/spi-nor-ids.c
+index 5bd5dd30..83c3e5d4 100644
+--- a/drivers/mtd/spi/spi-nor-ids.c
++++ b/drivers/mtd/spi/spi-nor-ids.c
+@@ -329,5 +329,8 @@ const struct flash_info spi_nor_ids[] = {
+ 	{ INFO("XM25QH64A", 0x207017, 0, 64 * 1024, 128, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+ 	{ INFO("XM25QH128A", 0x207018, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+ #endif
++	/* zbit */
++	{ INFO("zb25vq128",0x5e4018, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ |
++							SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB) },
+ 	{ },
+ };
+diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
+index c9862260..532c2793 100644
+--- a/include/config_distro_bootcmd.h
++++ b/include/config_distro_bootcmd.h
+@@ -483,13 +483,24 @@
+ 	\
+ 	BOOT_TARGET_DEVICES(BOOTENV_DEV)                                  \
+ 	\
+-	"distro_bootcmd=" BOOTENV_SET_SCSI_NEED_INIT                      \
++	"distro_bootcmd="						 \
++		"if mmc dev 1; then ;"					  \
++		"elif sf probe; then "					  \
++			"echo --- SPI OK ---; "				  \
++			"setenv fdt_high ffffffff;"			  \
++			"setenv bootargs console=ttyS2,1500000 earlyprintk rootfstype=squashfs \
++				mtdparts=spi0.0:1152k(uboot),64k(dtb),-(firmware);" \
++			"sf read 0x01f00000 0x120000 0x10000;"	\
++			"sf read 0x03080000 0x130000 0x400000;"	\
++			"bootm 0x03080000 - 0x01f00000;"	\
++		"fi;"							  \
++		BOOTENV_SET_SCSI_NEED_INIT			          \
+ 		BOOTENV_SET_NVME_NEED_INIT                                \
+ 		BOOTENV_SET_IDE_NEED_INIT                                 \
+ 		BOOTENV_SET_VIRTIO_NEED_INIT                              \
+ 		"for target in ${boot_targets}; do "                      \
+ 			"run bootcmd_${target}; "                         \
+-		"done\0"
++		"done\0"						  \
+ 
+ #ifndef CONFIG_BOOTCOMMAND
+ #define CONFIG_BOOTCOMMAND "run distro_bootcmd"
+diff --git a/include/configs/rock64_rk3328.h b/include/configs/rock64_rk3328.h
+new file mode 100644
+index 00000000..ed5888bf
+--- /dev/null
++++ b/include/configs/rock64_rk3328.h
+@@ -0,0 +1,17 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * (C) Copyright 2016 Rockchip Electronics Co., Ltd
++ */
++
++#ifndef __EVB_RK3328_H
++#define __EVB_RK3328_H
++
++#include <configs/rk3328_common.h>
++
++#define CONFIG_SYS_MMC_ENV_DEV 1
++
++#define SDRAM_BANK_SIZE			(2UL << 30)
++
++#define CONFIG_CONSOLE_SCROLL_LINES		10
++
++#endif
+diff --git a/include/configs/rockchip-common.h b/include/configs/rockchip-common.h
+index 0b9e24d1..cd41a22a 100644
+--- a/include/configs/rockchip-common.h
++++ b/include/configs/rockchip-common.h
+@@ -29,6 +29,17 @@
+ 	#define BOOT_TARGET_NVME(func)
+ #endif
+ 
++#if CONFIG_IS_ENABLED(CMD_SCSI)
++	#define BOOT_TARGET_SCSI(func) \
++		func(SCSI, scsi, 0) \
++		func(SCSI, scsi, 1) \
++		func(SCSI, scsi, 2) \
++		func(SCSI, scsi, 3) \
++		func(SCSI, scsi, 4)
++#else
++	#define BOOT_TARGET_SCSI(func)
++#endif
++
+ #if CONFIG_IS_ENABLED(CMD_USB)
+ 	#define BOOT_TARGET_USB(func) func(USB, usb, 0)
+ #else
+@@ -57,6 +68,7 @@
+ #define BOOT_TARGET_DEVICES(func) \
+ 	BOOT_TARGET_MMC(func) \
+ 	BOOT_TARGET_NVME(func) \
++	BOOT_TARGET_SCSI(func) \
+ 	BOOT_TARGET_USB(func) \
+ 	BOOT_TARGET_PXE(func) \
+ 	BOOT_TARGET_DHCP(func) \
+-- 
+2.25.1
+
