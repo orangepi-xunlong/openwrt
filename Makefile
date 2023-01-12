@@ -7,6 +7,9 @@ LC_ALL:=C
 LANG:=C
 TZ:=UTC
 export TOPDIR LC_ALL LANG TZ
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export GO111MODULE=on
+export GOPROXY=https://goproxy.cn
 
 empty:=
 space:= $(empty) $(empty)
