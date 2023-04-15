@@ -41,3 +41,14 @@ define Device/radxa_rock-pi-4a
   IMAGE/sysupgrade.img.gz := boot-common | boot-script | pine64-img | gzip | append-metadata
 endef
 TARGET_DEVICES += radxa_rock-pi-4a
+
+define Device/xunlong_orangepi-5
+  DEVICE_VENDOR := XunLong
+  DEVICE_MODEL := OrangePi 5
+  SOC := rk3588s
+  UBOOT_DEVICE_NAME := orangepi-5-rk3588
+  IMAGE/sysupgrade.img.gz := boot-common | boot-script orangepi-5 | pine64-img | gzip | append-metadata
+  DEVICE_PACKAGES := kmod-usb-net-rtl8152
+  KERNEL_PATCHVER := 5.10.110
+endef
+TARGET_DEVICES += xunlong_orangepi-5

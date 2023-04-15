@@ -1,0 +1,6 @@
+#!/bin/sh /etc/rc.common
+
+START=21
+start() {
+    /usr/bin/typec_usb2.sh
+}
