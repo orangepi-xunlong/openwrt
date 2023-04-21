@@ -1,5 +1,5 @@
 LINUX_VERSION-5.10 = .110
 #LINUX_KERNEL_HASH-5.10.110 = c5c3221aa1a8a8de0fdc889cdbc9091e9a970e2199cbcfaf6cd84888a76caff8
 KERNEL_GIT_CLONE_URI = https://github.com/orangepi-xunlong/linux-orangepi
-KERNEL_GIT_REF = d595b0b29afbcae525580208447b67e59608b619
+KERNEL_GIT_REF = 45d99cf184ab31a30087d0bd2a3c743eb21550d7
 KERNEL_GIT_OPT = --depth 1 -b orange-pi-5.10-rk3588-openwrt-v1
