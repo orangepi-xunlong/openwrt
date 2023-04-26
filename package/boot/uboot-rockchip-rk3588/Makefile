@@ -5,12 +5,11 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2023.04
-PKG_RELEASE:=$(AUTORELEASE)
-
-PKG_HASH:=e31cac91545ff41b71cec5d8c22afd695645cd6e2a442ccdacacd60534069341
-
-PKG_MAINTAINER:=Tobias Maedel <openwrt@tbspace.de>
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL=https://github.com/orangepi-xunlong/u-boot-orangepi
+PKG_SOURCE_DATE:=2017-09
+PKG_SOURCE_VERSION:=d7c6b92f9e33283bea56dbaec7743f5ecb5a7f89
+PKG_MIRROR_HASH:=9c0d83c1a01a48173e47f63f7cb292347f0cebf4f0396d98616e0bfd5ce6f3fc
 
 include $(INCLUDE_DIR)/u-boot.mk
 include $(INCLUDE_DIR)/package.mk
@@ -42,9 +41,8 @@ UBOOT_TARGETS := \
 UBOOT_CONFIGURE_VARS += USE_PRIVATE_LIBGCC=yes
 
 UBOOT_MAKE_FLAGS += \
-  PATH=$(PATH):$(STAGING_DIR_HOST)/bin \
   BL31=$(STAGING_DIR_IMAGE)/$(ATF) \
-  ROCKCHIP_TPL=$(STAGING_DIR_IMAGE)/$(TPL)
+  spl/u-boot-spl.bin u-boot.dtb u-boot.itb
 
 define Build/Configure
 	$(call Build/Configure/U-Boot)
@@ -55,6 +53,8 @@ endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
+	$(PKG_BUILD_DIR)/tools/mkimage -n rk3588 -T rksd -d \
+		$(STAGING_DIR_IMAGE)/$(TPL):$(PKG_BUILD_DIR)/spl/u-boot-spl.bin $(PKG_BUILD_DIR)/idbloader.img
 	$(CP) $(PKG_BUILD_DIR)/idbloader.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-idbloader.img
 	$(CP) $(PKG_BUILD_DIR)/u-boot.itb $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-u-boot.itb
 endef
