@@ -52,3 +52,27 @@ define Device/xunlong_orangepi-5
   KERNEL_PATCHVER := 5.10.110
 endef
 TARGET_DEVICES += xunlong_orangepi-5
+
+define Device/xunlong_orangepi-5-spi
+  DEVICE_VENDOR := XunLong
+  DEVICE_MODEL := Orange Pi 5 For Spi Boot
+  SOC := rk3588s
+  UBOOT_DEVICE_NAME := orangepi-5-rk3588-spi
+  IMAGE/sysupgrade.img.gz := boot-common | boot-script orangepi-5 | pine64-img | gzip | append-metadata
+  DEVICE_PACKAGES := kmod-usb-net-rtl8152 kmod-demo
+  KERNEL_LOADADDR = 0x00400000
+  KERNEL := kernel-bin | lzma | uImage lzma
+  IMAGES := sysupgrade.bin uboot.bin dtb.bin firmware.bin
+  UBOOT_SIZE := 2048k
+  DTB_SIZE := 256k
+  KERNEL_SIZE := 6144k
+  FIRMWARE_SIZE := 14080k
+  IMAGE_SIZE := 16384k
+  BLOCK_SIZE := 4k
+  IMAGE/sysupgrade.bin := pine64-img-spi | pad-to $$$$(UBOOT_SIZE) | append-dtb | pad-to $$$$(DTB_SIZE) \
+	  | append-kernel | pad-to $$$$(BLOCK_SIZE) | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(IMAGE_SIZE)
+  IMAGE/uboot.bin := pine64-img-spi | pad-to $$$$(BLOCK_SIZE)
+  IMAGE/dtb.bin := append-dtb | pad-to $$$$(BLOCK_SIZE)
+  IMAGE/firmware.bin := append-kernel | pad-to $$$$(BLOCK_SIZE) | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(FIRMWARE_SIZE)
+endef
+TARGET_DEVICES += xunlong_orangepi-5-spi

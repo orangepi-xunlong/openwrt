@@ -8,6 +8,7 @@ case ${roottype} in
 		FSCKEXT4=$(which fsck.ext4) || { echo "E: You must have fsck.ext4" && exit 1; }
 		RESIZE2FS=$(which resize2fs) || { echo "E: You must have resize2fs" && exit 1; }
 		rootsource=$(findmnt -n -o SOURCE /rom)			# i.e. /dev/mmcblk0p2
+		[[ ${rootsource} == *mtdblock* ]] && exit 0
 		rootdevice=${rootsource%p*}				# i.e. /dev/mmcblk0
 		partitions=${rootsource##*p}
 

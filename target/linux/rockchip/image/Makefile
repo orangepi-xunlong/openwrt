@@ -45,6 +45,17 @@ define Build/pine64-img
 	dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-u-boot.itb of="$@" seek=16384 conv=notrunc
 endef
 
+define Build/append-dtb
+	dd if="$(DTS_DIR)"/$(DEVICE_DTS).dtb >> $@
+endef
+
+define Build/pine64-img-spi
+
+        # Copy the idbloader and the u-boot image to the image at sector 0x40 and 0x200
+        dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-idbloader.img of="$@" seek=64 conv=notrunc
+        dd if="$(STAGING_DIR_IMAGE)"/$(UBOOT_DEVICE_NAME)-u-boot.itb of="$@" seek=768 conv=notrunc
+endef
+
 ### Devices ###
 define Device/Default
   PROFILES := Default
