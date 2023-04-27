@@ -49,9 +49,18 @@ define Device/xunlong_orangepi-5
   UBOOT_DEVICE_NAME := orangepi-5-rk3588
   IMAGE/sysupgrade.img.gz := boot-common | boot-script orangepi-5 | pine64-img | gzip | append-metadata
   DEVICE_PACKAGES := kmod-usb-net-rtl8152
-  KERNEL_PATCHVER := 5.10.110
 endef
 TARGET_DEVICES += xunlong_orangepi-5
+
+define Device/xunlong_orangepi-5-sata
+  DEVICE_VENDOR := XunLong
+  DEVICE_MODEL := Orange Pi 5 For sata boot
+  SOC := rk3588s
+  UBOOT_DEVICE_NAME := orangepi-5-rk3588
+  IMAGE/sysupgrade.img.gz := boot-common | boot-script orangepi-5 | pine64-img | gzip | append-metadata
+  DEVICE_PACKAGES := kmod-usb-net-rtl8152
+endef
+TARGET_DEVICES += xunlong_orangepi-5-sata
 
 define Device/xunlong_orangepi-5-spi
   DEVICE_VENDOR := XunLong
