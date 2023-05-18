@@ -659,6 +659,22 @@ endef
 
 $(eval $(call KernelPackage,r8169))
 
+define KernelPackage/r8125
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=RealTek RTL-8125 PCI Gigabit Ethernet Adapter kernel support
+  DEPENDS:=@PCI_SUPPORT +kmod-mii +kmod-phy-realtek +LINUX_5_10:kmod-mdio-devres
+  KCONFIG:= \
+    CONFIG_R8125
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/r8125/r8125.ko
+  AUTOLOAD:=$(call AutoProbe,r8125)
+endef
+
+define KernelPackage/r8125/description
+ Kernel modules for RealTek RTL-8125 PCI Gigabit Ethernet adapters
+endef
+
+$(eval $(call KernelPackage,r8125))
+
 
 define KernelPackage/ne2k-pci
   SUBMENU:=$(NETWORK_DEVICES_MENU)

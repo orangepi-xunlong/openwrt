@@ -1,0 +1,123 @@
+From dba96c1ef19f889f2c2e5270bd2dfbb34ae65108 Mon Sep 17 00:00:00 2001
+From: baiywt <baiywt_gj@163.com>
+Date: Tue, 16 May 2023 19:48:21 +0800
+Subject: [PATCH] Automatically detects boot devices and enters download mode
+ if needed
+
+---
+ arch/arm/dts/rk3588-orangepi-5-plus.dts |  1 +
+ arch/arm/mach-rockchip/boot_mode.c      |  2 ++
+ arch/arm/mach-rockchip/boot_rkimg.c     | 12 ++++++++++++
+ arch/arm/mach-rockchip/param.c          |  3 +++
+ include/configs/rockchip-common.h       | 12 ++++++++++++
+ 5 files changed, 30 insertions(+)
+
+diff --git a/arch/arm/dts/rk3588-orangepi-5-plus.dts b/arch/arm/dts/rk3588-orangepi-5-plus.dts
+index cccecb82ff..66725aeea2 100644
+--- a/arch/arm/dts/rk3588-orangepi-5-plus.dts
++++ b/arch/arm/dts/rk3588-orangepi-5-plus.dts
+@@ -163,6 +163,7 @@
+ 
+ &pcie3x4 {
+ 	u-boot,dm-pre-reloc;
++	vpcie3v3-supply = <&vcc3v3_pcie30>;
+ 	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+ 	status = "okay";
+ };
+diff --git a/arch/arm/mach-rockchip/boot_mode.c b/arch/arm/mach-rockchip/boot_mode.c
+index 0436290a4b..8375dcc105 100644
+--- a/arch/arm/mach-rockchip/boot_mode.c
++++ b/arch/arm/mach-rockchip/boot_mode.c
+@@ -226,6 +226,7 @@ int rockchip_get_boot_mode(void)
+ int setup_boot_mode(void)
+ {
+ 	char env_preboot[256] = {0};
++	const char *devtype_num_set = "run rkimg_bootdev_download";
+ 
+ 	switch (rockchip_get_boot_mode()) {
+ 	case BOOT_MODE_BOOTLOADER:
+@@ -251,6 +252,7 @@ int setup_boot_mode(void)
+ 		break;
+ #endif
+ 	case BOOT_MODE_LOADER:
++		run_command_list(devtype_num_set, -1, 0);
+ 		printf("enter Rockusb!\n");
+ 		env_set("preboot", "setenv preboot; download");
+ 		run_command("download", 0);
+diff --git a/arch/arm/mach-rockchip/boot_rkimg.c b/arch/arm/mach-rockchip/boot_rkimg.c
+index 72e2abceaa..7c60eb8da8 100644
+--- a/arch/arm/mach-rockchip/boot_rkimg.c
++++ b/arch/arm/mach-rockchip/boot_rkimg.c
+@@ -50,6 +50,13 @@ __weak int rk_board_scan_bootdev(void)
+ 	return run_command_list(devtype_num_set, -1, 0);
+ }
+ 
++__weak int rk_board_scan_bootdev_download(void)
++{
++	const char *devtype_num_set = "run rkimg_bootdev_download";
++
++	return run_command_list(devtype_num_set, -1, 0);
++}
++
+ static int bootdev_init(const char *devtype, const char *devnum)
+ {
+ #ifdef CONFIG_MMC
+@@ -110,6 +117,10 @@ static void boot_devtype_init(void)
+ 	}
+ #endif
+ 
++#ifdef CONFIG_NVME
++	pci_init();
++#endif
++
+ 	/* scan list */
+ #ifdef CONFIG_MMC
+ 	mmc_initialize(gd->bd);
+@@ -328,6 +339,7 @@ void setup_download_mode(void)
+ 		vbus = rockchip_u2phy_vbus_detect();
+ #endif
+ 		if (vbus > 0) {
++			rk_board_scan_bootdev_download();
+ 			printf("%sentering download mode...\n",
+ 			       IS_ENABLED(CONFIG_CMD_ROCKUSB) ?
+ 			       "" : "no rockusb, ");
+diff --git a/arch/arm/mach-rockchip/param.c b/arch/arm/mach-rockchip/param.c
+index 0f4f806486..6ea654b0e6 100644
+--- a/arch/arm/mach-rockchip/param.c
++++ b/arch/arm/mach-rockchip/param.c
+@@ -257,6 +257,9 @@ int param_parse_atags_bootdev(char **devtype, char **devnum)
+ 		case BOOT_TYPE_MTD_BLK_SPI_NOR:
+ 			*devtype = "mtd";
+ 			*devnum = "2";
++#if (defined CONFIG_NVME || defined CONFIG_SCSI)
++			return -EINVAL;
++#endif
+ 			break;
+ #endif
+ 		default:
+diff --git a/include/configs/rockchip-common.h b/include/configs/rockchip-common.h
+index 0a73268933..44de67c240 100644
+--- a/include/configs/rockchip-common.h
++++ b/include/configs/rockchip-common.h
+@@ -183,6 +183,18 @@
+ 		"setenv devtype spinor; setenv devnum 1;" \
+ 	"else" \
+ 		"setenv devtype ramdisk; setenv devnum 0;" \
++	"fi; \0" \
++	"rkimg_bootdev_download=" \
++	"scsi scan;" \
++	"nvme scan;" \
++	"if mmc dev 1; then " \
++		"setenv devtype mmc; setenv devnum 1;" \
++	"elif mmc dev 0; then " \
++		"setenv devtype mmc; setenv devnum 0;" \
++	"elif nvme dev 0; then " \
++		"setenv devtype nvme; setenv devnum 0;" \
++	"elif scsi dev 0; then " \
++		"setenv devtype scsi; setenv devnum 0;" \
+ 	"fi; \0"
+ 
+ #if defined(CONFIG_AVB_VBMETA_PUBLIC_KEY_VALIDATE)
+-- 
+2.34.1
+

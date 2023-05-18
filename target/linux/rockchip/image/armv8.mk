@@ -52,6 +52,16 @@ define Device/xunlong_orangepi-5
 endef
 TARGET_DEVICES += xunlong_orangepi-5
 
+define Device/xunlong_orangepi-5-plus
+  DEVICE_VENDOR := XunLong
+  DEVICE_MODEL := Orange Pi 5 Plus
+  SOC := rk3588
+  UBOOT_DEVICE_NAME := orangepi-5-plus-rk3588
+  IMAGE/sysupgrade.img.gz := boot-common | boot-script orangepi-5 | pine64-img | gzip | append-metadata
+  DEVICE_PACKAGES := kmod-usb-net-rtl8152 kmod-r8125 kmod-iwlwifi
+endef
+TARGET_DEVICES += xunlong_orangepi-5-plus
+
 define Device/xunlong_orangepi-5-sata
   DEVICE_VENDOR := XunLong
   DEVICE_MODEL := Orange Pi 5 For sata boot
@@ -83,3 +93,25 @@ define Device/xunlong_orangepi-5-spi
   IMAGE/firmware.bin := append-kernel | pad-to $$$$(BLOCK_SIZE) | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(FIRMWARE_SIZE)
 endef
 TARGET_DEVICES += xunlong_orangepi-5-spi
+
+define Device/xunlong_orangepi-5-plus-spi
+  DEVICE_VENDOR := XunLong
+  DEVICE_MODEL := Orange Pi 5 Plus For Spi Boot
+  SOC := rk3588
+  UBOOT_DEVICE_NAME := orangepi-5-plus-rk3588-spi
+  DEVICE_PACKAGES := kmod-usb-net-rtl8152 kmod-r8125
+  KERNEL_LOADADDR = 0x00400000
+  KERNEL := kernel-bin | lzma | uImage lzma
+  IMAGES := sysupgrade.bin uboot.bin dtb.bin firmware.bin
+  UBOOT_SIZE := 2048k
+  DTB_SIZE := 256k
+  FIRMWARE_SIZE := 14080k
+  IMAGE_SIZE := 16384k
+  BLOCK_SIZE := 4k
+  IMAGE/sysupgrade.bin := pine64-img-spi | pad-to $$$$(UBOOT_SIZE) | append-dtb | pad-to $$$$(DTB_SIZE) \
+	  | append-kernel | pad-to $$$$(BLOCK_SIZE) | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(IMAGE_SIZE)
+  IMAGE/uboot.bin := pine64-img-spi | pad-to $$$$(BLOCK_SIZE)
+  IMAGE/dtb.bin := append-dtb | pad-to $$$$(BLOCK_SIZE)
+  IMAGE/firmware.bin := append-kernel | pad-to $$$$(BLOCK_SIZE) | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(FIRMWARE_SIZE)
+endef
+TARGET_DEVICES += xunlong_orangepi-5-plus-spi

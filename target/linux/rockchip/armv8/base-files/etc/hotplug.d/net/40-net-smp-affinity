@@ -37,5 +37,15 @@ friendlyarm,nanopi-r4s)
 	set_interface_core 10 "eth0"
 	set_interface_core 20 "eth1"
 	;;
+rockchip,rk3588-orangepi-5-plus)
+	if [ -d /sys/class/net/eth1 ]; then
+		pci_bus=$(ls -ld /sys/class/net/eth1/device|awk '{print $NF}' |xargs basename)
+		if [ ${pci_bus} == "0004:41:00.0" ]; then
+		        ip link set eth0 name eth"${pci_bus:0:4}"
+		        ip link set eth1 name eth0
+		        ip link set eth"${pci_bus:0:4}" name eth1
+		fi
+	fi
+	;;
 esac
 

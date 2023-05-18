@@ -47,9 +47,35 @@ define U-Boot/orangepi-5-rk3588-spi
   #OF_PLATDATA:=$(1)
 endef
 
+define U-Boot/orangepi-5-plus-rk3588
+  BUILD_SUBTARGET:=armv8
+  NAME:=Orange Pi 5 Plus
+  BUILD_DEVICES:= \
+    xunlong_orangepi-5-plus
+  DEPENDS:=+PACKAGE_u-boot-orangepi-5-plus-rk3588:arm-trusted-firmware-rk3588
+  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rk3588
+  ATF:=rk3588_bl31_v1.27.elf
+  TPL=rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.08.bin
+  #OF_PLATDATA:=$(1)
+endef
+
+define U-Boot/orangepi-5-plus-rk3588-spi
+  BUILD_SUBTARGET:=armv8
+  NAME:=Orange Pi 5 Plus for Spi Boot
+  BUILD_DEVICES:= \
+    xunlong_orangepi-5-plus-spi
+  DEPENDS:=+PACKAGE_u-boot-orangepi-5-plus-rk3588-spi:arm-trusted-firmware-rk3588
+  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rk3588
+  ATF:=rk3588_bl31_v1.27.elf
+  TPL=rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.08.bin
+  #OF_PLATDATA:=$(1)
+endef
+
 UBOOT_TARGETS := \
   orangepi-5-rk3588 \
   orangepi-5-rk3588-spi \
+  orangepi-5-plus-rk3588 \
+  orangepi-5-plus-rk3588-spi \
 
 UBOOT_CONFIGURE_VARS += USE_PRIVATE_LIBGCC=yes
 
