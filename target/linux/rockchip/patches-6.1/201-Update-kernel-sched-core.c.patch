@@ -1,0 +1,24 @@
+From f67ea955331840d40469dae6371b80ac3d921849 Mon Sep 17 00:00:00 2001
+From: baiywt <baiywt_gj@163.com>
+Date: Wed, 22 Nov 2023 22:09:32 +0800
+Subject: [PATCH] Update kernel/sched/core.c
+
+---
+ kernel/sched/core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index deee246c5..d3afe306c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7730,6 +7730,7 @@ int sched_setscheduler(struct task_struct *p, int policy,
+ {
+ 	return _sched_setscheduler(p, policy, param, true);
+ }
++EXPORT_SYMBOL_GPL(sched_setscheduler);
+ 
+ int sched_setattr(struct task_struct *p, const struct sched_attr *attr)
+ {
+-- 
+2.25.1
+
