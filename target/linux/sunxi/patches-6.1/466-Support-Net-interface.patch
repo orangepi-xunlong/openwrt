@@ -1,0 +1,195 @@
+From 90194823c157671bb3eccccc6a2711cf7f8ebad2 Mon Sep 17 00:00:00 2001
+From: liuyang <2665982620@qq.com>
+Date: Fri, 3 Nov 2023 16:19:30 +0800
+Subject: [PATCH] Support Net interface
+
+---
+ drivers/net/phy/motorcomm.c  | 11 ++++---
+ drivers/net/phy/phy_device.c | 58 ++++++++++++++++++++++++++++++++++++
+ drivers/net/phy/realtek.c    | 45 ++++++++++++++++++++++++++++
+ 3 files changed, 110 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/phy/motorcomm.c b/drivers/net/phy/motorcomm.c
+index c08b918a7..284ad7f93 100644
+--- a/drivers/net/phy/motorcomm.c
++++ b/drivers/net/phy/motorcomm.c
+@@ -6,7 +6,6 @@
+  * Author: Frank <Frank.Sae@motor-comm.com>
+  */
+ 
+-#include <linux/bitfield.h>
+ #include <linux/etherdevice.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -992,6 +991,10 @@ static int yt8531_probe(struct phy_device *phydev)
+ 		return -EINVAL;
+ 	}
+ 
++	ytphy_write_ext(phydev, 0xa00d, 0x670);
++	ytphy_write_ext(phydev, 0xa00e, 0x2070);
++	ytphy_write_ext(phydev, 0xa00f, 0x7e);
++
+ 	return ytphy_modify_ext_with_lock(phydev, YTPHY_SYNCE_CFG_REG, mask,
+ 					  val);
+ }
+@@ -1534,10 +1537,10 @@ static int yt8531_config_init(struct phy_device *phydev)
+ static void yt8531_link_change_notify(struct phy_device *phydev)
+ {
+ 	struct device_node *node = phydev->mdio.dev.of_node;
+-	bool tx_clk_1000_inverted = false;
+-	bool tx_clk_100_inverted = false;
+-	bool tx_clk_10_inverted = false;
+ 	bool tx_clk_adj_enabled = false;
++	bool tx_clk_1000_inverted;
++	bool tx_clk_100_inverted;
++	bool tx_clk_10_inverted;
+ 	u16 val = 0;
+ 	int ret;
+ 
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 17e64737d..1681aeac0 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -565,11 +565,69 @@ static ssize_t phy_dev_flags_show(struct device *dev,
+ }
+ static DEVICE_ATTR_RO(phy_dev_flags);
+ 
++static ssize_t
++phy_registers_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct phy_device *phydev = to_phy_device(dev);
++	int index;
++
++	for (index = 0; index < 32; index++)
++		sprintf(buf, "%s%2d: 0x%x\n", buf, index,
++			phy_read(phydev, index));
++
++	return strlen(buf);
++}
++
++static ssize_t
++phy_registers_store(struct device *dev,
++		    struct device_attribute *attr,
++		    const char *buf, size_t count)
++{
++	struct phy_device *phydev = to_phy_device(dev);
++	int index = 0, val = 0;
++	char tmp[32];
++	char *data;
++
++	if (count >= sizeof(tmp))
++		goto out;
++
++	memset(tmp, 0, sizeof(tmp));
++	memcpy(tmp, buf, count);
++
++	data = tmp;
++	data = strstr(data, " ");
++	if (!data)
++		goto out;
++	*data = 0;
++	data++;
++
++	if (kstrtoint(tmp, 0, &index) || index >= 32)
++		goto out;
++
++	if (kstrtoint(data, 0, &val) || val > 0xffff)
++		goto out;
++
++	pr_info("Set Ethernet PHY register %d to 0x%x\n", (int)index, (int)val);
++
++	phy_write(phydev, index, val);
++
++	return count;
++
++out:
++	pr_err("wrong register value input\n");
++	pr_err("usage: <reg index> <value>\n");
++
++	return count;
++}
++
++static DEVICE_ATTR_RW(phy_registers);
++
+ static struct attribute *phy_dev_attrs[] = {
+ 	&dev_attr_phy_id.attr,
+ 	&dev_attr_phy_interface.attr,
+ 	&dev_attr_phy_has_fixups.attr,
+ 	&dev_attr_phy_dev_flags.attr,
++	&dev_attr_phy_registers.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(phy_dev);
+diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+index cd4e6e491..54c7db969 100644
+--- a/drivers/net/phy/realtek.c
++++ b/drivers/net/phy/realtek.c
+@@ -81,6 +81,9 @@
+ #define RTL_GENERIC_PHYID			0x001cc800
+ #define RTL_8211FVD_PHYID			0x001cc878
+ 
++#define RTL_8211E_PHY_ID  0x001cc915
++#define RTL_8211F_PHY_ID  0x001cc916
++
+ MODULE_DESCRIPTION("Realtek PHY driver");
+ MODULE_AUTHOR("Johnson Leung");
+ MODULE_LICENSE("GPL");
+@@ -91,6 +94,39 @@ struct rtl821x_priv {
+ 	bool has_phycr2;
+ };
+ 
++static int phy_rtl8211e_led_fixup(struct phy_device *phydev)
++{
++	printk("%s in\n", __func__);
++
++	/*switch to extension page44*/
++	phy_write(phydev, 31, 0x07);
++
++	phy_write(phydev, 30, 0x2c);
++	phy_write(phydev, 26, 0x20);
++	phy_write(phydev, 28, 0x07);
++
++	/*switch back to page0*/
++	phy_write(phydev,31,0x00);
++
++	return 0;
++}
++
++static int phy_rtl8211f_led_fixup(struct phy_device *phydev)
++{
++	printk("%s in\n", __func__);
++
++	/*switch to extension page44*/
++	phy_write(phydev, 31, 0xd04);
++
++	phy_write(phydev, 16, 0xae00);
++	phy_write(phydev, 17, 0);
++
++	/*switch back to page0*/
++	phy_write(phydev,31,0x00);
++
++	return 0;
++}
++
+ static int rtl821x_read_page(struct phy_device *phydev)
+ {
+ 	return __phy_read(phydev, RTL821x_PAGE_SELECT);
+@@ -133,6 +169,15 @@ static int rtl821x_probe(struct phy_device *phydev)
+ 
+ 	phydev->priv = priv;
+ 
++	/* register the PHY board fixup */
++	ret = phy_register_fixup_for_uid(RTL_8211E_PHY_ID, 0xffffffff, phy_rtl8211e_led_fixup);
++	if (ret)
++		pr_warn("Cannot register PHY board fixup.\n");
++
++	ret = phy_register_fixup_for_uid(RTL_8211F_PHY_ID, 0xffffffff, phy_rtl8211f_led_fixup);
++	if (ret)
++		pr_warn("Cannot register PHY board fixup.\n");
++
+ 	return 0;
+ }
+ 
+-- 
+2.34.1
+
