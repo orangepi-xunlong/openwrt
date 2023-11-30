@@ -1,0 +1,25 @@
+From 74c81e04d876199cdd283012ffbed0914285b09c Mon Sep 17 00:00:00 2001
+From: liuyang <2665982620@qq.com>
+Date: Fri, 8 Dec 2023 11:47:35 +0800
+Subject: [PATCH] Support Zero3 1G_2G_4G
+
+---
+ arch/arm/mach-sunxi/dram_timings/h616_lpddr4.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-sunxi/dram_timings/h616_lpddr4.c b/arch/arm/mach-sunxi/dram_timings/h616_lpddr4.c
+index ca36899f..46daed86 100644
+--- a/arch/arm/mach-sunxi/dram_timings/h616_lpddr4.c
++++ b/arch/arm/mach-sunxi/dram_timings/h616_lpddr4.c
+@@ -30,7 +30,7 @@ void mctl_set_timing_params(struct dram_para *para)
+ 	u8 trp		= ns_to_t(21);		/* JEDEC: >= 13.75 ns */
+ 	u8 tras		= ns_to_t(42);		/* JEDEC >= 36 ns, <= 9*trefi */
+ 	u16 trefi	= ns_to_t(3904) / 32;	/* JEDEC: 7.8us@Tcase <= 85C */
+-	u16 trfc	= ns_to_t(180);		/* JEDEC: 160 ns for 2Gb */
++	u16 trfc	= ns_to_t(280);		/* JEDEC: 160 ns for 2Gb */
+ 	u16 txsr	= ns_to_t(190);		/* ? */
+ 
+ 	u8 tmrw		= max(ns_to_t(14), 5);	/* ? */
+-- 
+2.34.1
+

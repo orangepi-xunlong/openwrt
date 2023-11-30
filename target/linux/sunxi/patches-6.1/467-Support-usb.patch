@@ -1,0 +1,25 @@
+From 306a0c21c0b86510f8d75e51f176f3c636a486d2 Mon Sep 17 00:00:00 2001
+From: liuyang <2665982620@qq.com>
+Date: Fri, 3 Nov 2023 19:50:07 +0800
+Subject: [PATCH] Support usb
+
+---
+ drivers/phy/allwinner/phy-sun4i-usb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/phy/allwinner/phy-sun4i-usb.c b/drivers/phy/allwinner/phy-sun4i-usb.c
+index 5472db9e8..ee4a4f123 100644
+--- a/drivers/phy/allwinner/phy-sun4i-usb.c
++++ b/drivers/phy/allwinner/phy-sun4i-usb.c
+@@ -847,7 +847,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		snprintf(name, sizeof(name), "usb%d_reset", i);
+-		phy->reset = devm_reset_control_get(dev, name);
++		phy->reset = devm_reset_control_get_shared(dev, name);
+ 		if (IS_ERR(phy->reset)) {
+ 			dev_err(dev, "failed to get reset %s\n", name);
+ 			return PTR_ERR(phy->reset);
+-- 
+2.34.1
+
