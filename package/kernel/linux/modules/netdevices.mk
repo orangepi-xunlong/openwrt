@@ -18,6 +18,17 @@ endef
 
 $(eval $(call KernelPackage,sis190))
 
+define KernelPackage/yt6801
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=motorcomm fuxi Ethernet support
+  KCONFIG:=CONFIG_NET_VENDOR_MOTORCOMM=y \
+         CONFIG_FUXI=n
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/motorcomm/yt6801.ko
+  AUTOLOAD:=$(call AutoProbe,yt6801)
+endef
+
+$(eval $(call KernelPackage,yt6801))
+
 
 define KernelPackage/skge
   SUBMENU:=$(NETWORK_DEVICES_MENU)

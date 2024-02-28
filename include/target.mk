@@ -64,14 +64,11 @@ DEFAULT_PACKAGES.router:=\
 
 # For easy usage
 DEFAULT_PACKAGES.tweak:=\
-	bash \
 	block-mount \
+	parted \
 	fdisk \
-	f2fs-tools \
-	f2fsck \
 	resize2fs \
 	losetup \
-	mount-utils \
 	kmod-ipt-raw \
 	kmod-nf-nathelper \
 	kmod-nf-nathelper-extra \

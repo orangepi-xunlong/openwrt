@@ -1,0 +1,11 @@
+CONFIG_TARGET_rockchip=y
+CONFIG_TARGET_rockchip_armv8=y
+CONFIG_TARGET_rockchip_armv8_DEVICE_xunlong_orangepi-5-pro-spi=y
+# CONFIG_TARGET_ROOTFS_EXT4FS is not set
+
+CONFIG_PACKAGE_openssh-sftp-server=y
+CONFIG_PACKAGE_wpa-supplicant=y
+CONFIG_PACKAGE_hostapd=y
+CONFIG_PACKAGE_kmod-brcmfmac=y
+CONFIG_PACKAGE_brcmfmac-firmware=y
+CONFIG_PACKAGE_kmod-yt6801=y

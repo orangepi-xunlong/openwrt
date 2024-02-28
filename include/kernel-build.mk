@@ -57,6 +57,15 @@ define Download/git-kernel
   OPTS:=$(KERNEL_GIT_OPTS)
 endef
 
+define Download/git-kernel-test
+  URL:=$(call qstrip,$(KERNEL_GIT_CLONE_URI))
+  PROTO:=git
+  VERSION:=$(KERNEL_GIT_REF)
+  FILE:=$(LINUX_SOURCE)
+  SUBDIR:=linux-$(LINUX_VERSION)
+  OPTS:=$(KERNEL_GIT_OPT)
+endef
+
 ifdef CONFIG_COLLECT_KERNEL_DEBUG
   define Kernel/CollectDebug
 	rm -rf $(KERNEL_BUILD_DIR)/debug
@@ -84,6 +93,7 @@ endif
 define BuildKernel
   $(if $(QUILT),$(Build/Quilt))
   $(if $(LINUX_SITE),$(call Download,kernel))
+  $(if $(call qstrip,$(KERNEL_GIT_CLONE_URI)),$(call Download,git-kernel-test))
   $(if $(call qstrip,$(CONFIG_KERNEL_GIT_CLONE_URI)),$(call Download,git-kernel))
 
   .NOTPARALLEL:

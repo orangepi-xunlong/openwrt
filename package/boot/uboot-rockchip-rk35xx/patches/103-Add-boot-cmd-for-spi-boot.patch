@@ -1,0 +1,29 @@
+From ea9faadfccf1cfcaaae8b1cd422abb2415b1b9d4 Mon Sep 17 00:00:00 2001
+From: baiywt <baiywt_gj@163.com>
+Date: Wed, 26 Apr 2023 18:35:40 +0800
+Subject: [PATCH 2/4] Add boot cmd for spi boot
+
+---
+ include/configs/rockchip-common.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/rockchip-common.h b/include/configs/rockchip-common.h
+index 0a73268..f0d9891 100644
+--- a/include/configs/rockchip-common.h
++++ b/include/configs/rockchip-common.h
+@@ -46,7 +46,11 @@
+ 	"mtd_boot="					\
+ 		"if mtd_blk dev ${devnum}; then "	\
+ 			"setenv devtype mtd; "		\
+-			"run scan_dev_for_boot_part; "	\
++			"setenv bootargs console=ttyFIQ0,1500000 console=tty1 rootfstype=squashfs \
++		         mtdparts=spi5.0:2048k(uboot),256k(dtb),-(firmware);" \
++			 "mtd_blk read 0x01f00000 0x1000 0x200;" 	\
++			 "mtd_blk read 0x06400000 0x1200 0x3000;"	\
++			 "bootm 0x06400000 - 0x01f00000;" \
+ 		"fi\0"
+ #define BOOTENV_DEV_MTD		BOOTENV_DEV_BLKDEV
+ #define BOOTENV_DEV_NAME_MTD	BOOTENV_DEV_NAME_BLKDEV
+-- 
+2.25.1
+

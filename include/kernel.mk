@@ -64,7 +64,7 @@ else
 
   ifneq (,$(findstring -rc,$(LINUX_VERSION)))
       LINUX_SITE:=https://git.kernel.org/torvalds/t
-  else ifeq ($(call qstrip,$(CONFIG_EXTERNAL_KERNEL_TREE))$(call qstrip,$(CONFIG_KERNEL_GIT_CLONE_URI)),)
+  else ifeq ($(call qstrip,$(CONFIG_EXTERNAL_KERNEL_TREE))$(call qstrip,$(CONFIG_KERNEL_GIT_CLONE_URI))$(call qstrip,$(KERNEL_GIT_CLONE_URI)),)
       LINUX_SITE:=@KERNEL/linux/kernel/v$(word 1,$(subst ., ,$(KERNEL_BASE))).x
   else
       LINUX_UNAME_VERSION:=$(strip $(shell cat $(LINUX_DIR)/include/config/kernel.release 2>/dev/null))
