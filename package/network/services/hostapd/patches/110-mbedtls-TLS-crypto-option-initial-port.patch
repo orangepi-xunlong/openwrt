@@ -4453,7 +4453,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
 +#endif
 +
 +#if MBEDTLS_VERSION_NUMBER < 0x03020000 /* mbedtls 3.2.0 */
-+#define mbedtls_ssl_get_ciphersuite_id_from_ssl(ssl) \
++#define mbedtls_ssl_get_ciphersuite_id(ssl) \
 +        ((ssl)->MBEDTLS_PRIVATE(session) \
 +        ?(ssl)->MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(ciphersuite) \
 +        : 0)
@@ -6464,7 +6464,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
 +        return 0; /* (calculation not extracted) */
 +  #endif /* MBEDTLS_SSL_PROTO_TLS1_3 */
 +
-+    int ciphersuite = mbedtls_ssl_get_ciphersuite_id_from_ssl(ssl);
++    int ciphersuite = mbedtls_ssl_get_ciphersuite_id(ssl);
 +    const mbedtls_ssl_ciphersuite_t *ciphersuite_info =
 +      mbedtls_ssl_ciphersuite_from_id(ciphersuite);
 +    if (ciphersuite_info == NULL)
@@ -6564,7 +6564,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
 +         * mbed TLS library enforces dhm min bitlen in ServerKeyExchange)*/
 +	if (MBEDTLS_TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 ==
 +	  #if MBEDTLS_VERSION_NUMBER < 0x03020000 /* mbedtls 3.2.0 */
-+	          mbedtls_ssl_get_ciphersuite_id_from_ssl(&conn->ssl)
++	          mbedtls_ssl_get_ciphersuite_id(&conn->ssl)
 +	  #else
 +	          mbedtls_ssl_get_ciphersuite_id(
 +	            mbedtls_ssl_get_ciphersuite(&conn->ssl))
@@ -6846,7 +6846,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
 +{
 +	if (conn == NULL)
 +		return 0;
-+	return (u16)mbedtls_ssl_get_ciphersuite_id_from_ssl(&conn->ssl);
++	return (u16)mbedtls_ssl_get_ciphersuite_id(&conn->ssl);
 +}
 +#endif
 +
@@ -6856,7 +6856,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
 +{
 +	if (conn == NULL)
 +		return -1;
-+	const int id = mbedtls_ssl_get_ciphersuite_id_from_ssl(&conn->ssl);
++	const int id = mbedtls_ssl_get_ciphersuite_id(&conn->ssl);
 +	return tls_mbedtls_translate_ciphername(id, buf, buflen) ? 0 : -1;
 +}
 +
