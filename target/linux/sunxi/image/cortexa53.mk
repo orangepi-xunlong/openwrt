@@ -125,6 +125,13 @@ define Device/xunlong_orangepi-zero3
 endef
 TARGET_DEVICES += xunlong_orangepi-zero3
 
+define Device/xunlong_orangepi-zero2w
+  DEVICE_VENDOR := Xunlong
+  DEVICE_MODEL := Orange Pi Zero 2W
+  $(Device/sun50i-h618)
+endef
+TARGET_DEVICES += xunlong_orangepi-zero2w
+
 define Device/xunlong_orangepi-zero2
   DEVICE_VENDOR := Xunlong
   DEVICE_MODEL := Orange Pi Zero 2

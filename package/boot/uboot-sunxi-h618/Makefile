@@ -34,8 +34,18 @@ define U-Boot/orangepi_zero3
   ATF:=h616
 endef
 
+define U-Boot/orangepi_zero2w
+  BUILD_SUBTARGET:=cortexa53
+  NAME:=Xunlong Orange Pi Zero2W
+  BUILD_DEVICES:=xunlong_orangepi-zero2w
+  DEPENDS:=+PACKAGE_u-boot-orangepi_zero2w:trusted-firmware-a-sunxi-h616
+  UENV:=h616
+  ATF:=h616
+endef
+
 UBOOT_TARGETS := \
-	orangepi_zero3
+	orangepi_zero3 \
+  orangepi_zero2w
 
 UBOOT_CONFIGURE_VARS += USE_PRIVATE_LIBGCC=yes
 
